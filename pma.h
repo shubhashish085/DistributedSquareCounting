@@ -1,0 +1,396 @@
+#ifndef DISTRIBUTEDSQUARECOUNTING_PMA_H
+#define DISTRIBUTEDSQUARECOUNTING_PMA_H
+
+
+#include <climits>
+#include <cmath>
+#include <iostream>
+#include <vector>
+#include <functional>
+#include <cstring>
+#include <cassert>
+#include <chrono>
+
+
+class PMA{
+
+    public:
+        typedef std::function<void(uint64_t)> range_func;
+        static constexpr uint64_t INT_NULL = UINT64_MAX;
+        static constexpr uint32_t INVALID_IDX = UINT32_MAX;
+
+        std::vector<uint64_t> data;
+        uint32_t length;
+        double leaf_max = 0.75;
+        uint32_t num_elements;
+        bool resize_allowed;
+        uint32_t max_index;
+        std::vector<uint64_t> temp;
+
+        PMA(uint32_t size);
+        PMA(uint32_t size, double leaf_max);
+        PMA(uint32_t size, double leaf_max, bool resize_allowed);
+        
+        PMA() = default;
+
+        std::vector<uint64_t> get_min_range(uint32_t left, uint32_t right);
+        void swap_data(std::vector<uint64_t>& tmp);
+        void range(uint64_t left, uint64_t right, range_func& op);
+        
+        uint32_t logN();
+        uint32_t loglogN();
+        uint32_t leaf_index(uint32_t index);
+        uint32_t next_leaf(uint32_t index);
+        uint32_t leaf_number(uint32_t index);
+        uint32_t leaf_position(uint32_t leaf_num);
+        uint32_t num_leaves();
+        uint32_t depth();
+        uint32_t count_nonempty(uint32_t index, uint32_t len);
+
+        uint32_t size();
+        void insert(uint64_t i);
+        void delete_edge(uint64_t i);
+        bool query(uint64_t i); 
+        uint32_t search(uint64_t i);
+        void redistribute(uint32_t index, uint32_t len, uint32_t density_count);
+        void resize();
+        void slide_left(uint32_t index);
+        void slide_right(uint32_t index);
+        void print_pma(std::ostream& stream = std::cout);
+        
+};
+
+PMA::PMA(uint32_t size_param) {
+    data.resize(size_param, INT_NULL);
+    length = size_param;
+    num_elements = 0;
+    resize_allowed = true;
+    max_index = INVALID_IDX;
+}
+
+PMA::PMA(uint32_t size, double leaf_max_param) {
+    data.resize(size, INT_NULL);
+    length = size;
+    num_elements = 0;
+    leaf_max = leaf_max_param;
+    resize_allowed = true;
+    max_index = INVALID_IDX;
+}
+
+PMA::PMA(uint32_t size, double leaf_max_param, bool resize_allowed_param) {
+    data.resize(size, INT_NULL);
+    length = size;
+    num_elements = 0;
+    leaf_max = leaf_max_param;
+    resize_allowed = resize_allowed_param;
+    max_index = INVALID_IDX;
+}
+
+
+uint32_t MSSB(uint32_t x) {
+    uint32_t i = 0;
+    while (x != 0) {
+        x = x >> 1;
+        ++i;
+    }
+    return i - 1;
+}
+
+uint32_t next_power_of_2(uint32_t x) {
+    return 1 << (MSSB(x) + 1);
+}
+
+uint32_t PMA::size() { return length; } // Returning the size of the pma
+uint32_t PMA::logN() { return next_power_of_2((uint32_t) log2(length)); }
+uint32_t PMA::loglogN() { return (uint32_t) log2(logN()); }
+uint32_t PMA::leaf_index(uint32_t index) { return (index & ~(logN() - 1)); }
+uint32_t PMA::next_leaf(uint32_t index) { return leaf_index(index + logN()); }
+uint32_t PMA::leaf_number(uint32_t index) { return leaf_index(index) >> loglogN(); }
+uint32_t PMA::leaf_position(uint32_t leaf_num) { return leaf_num << loglogN(); }
+uint32_t PMA::num_leaves() { return length / logN(); }
+uint32_t PMA::depth() { return MSSB(num_leaves()); }
+
+
+uint32_t PMA::count_nonempty(uint32_t index, uint32_t len)  { 
+    uint32_t full = 0;
+    for (uint32_t i = index; i < index + len;) {
+        if (data[i] != INT_NULL) {
+            ++full;
+            i += 1;
+        }
+        else {
+            i = next_leaf(i);
+        }
+    }
+    return full;
+}
+
+bool PMA::query(uint64_t key) {
+    uint32_t idx = search(key);
+    if (idx == INVALID_IDX) {
+        return false;
+    }
+    return data[idx] == key;
+}
+
+
+uint32_t PMA::search(uint64_t key) {
+    uint32_t low = 0;
+    uint32_t high = leaf_index(length - 1);
+    uint64_t min_key = data[low];
+    if (key == min_key) {
+        return low;
+    }
+    else if (key < min_key) {
+        return INVALID_IDX;
+    }
+    
+    uint32_t argmax = max_index;
+    uint64_t max_key = data[argmax];
+    high = leaf_index(argmax);
+    
+    if (key >= max_key) {
+        return argmax;
+    }
+
+    while (low < high) {
+        uint32_t mid = (low + high) / 2;
+        uint32_t mid_leaf = leaf_index(mid);
+        if (data[mid_leaf] == key) {
+            return mid_leaf;
+        }
+        else if (data[mid_leaf] > key) {
+            high = mid_leaf - logN();
+        }
+        else {
+            if (mid_leaf == low) {
+                break; // avoid infinite loop, can only occur if high = low + 1 leaf
+            }
+            low = mid_leaf;
+        }
+    }
+
+    // if low != high, then key could be either in low or high. Check first element of high to find out which
+    if (data[high] == key) {
+        return high;
+    }
+    if (data[high] < key) {
+        low = high;
+    }
+    // search leaf
+    uint32_t leaf = leaf_index(low);
+    for (uint32_t i = 0; i < logN(); i += 1) {
+        if (data[leaf + i] == INT_NULL) {
+            return leaf + i - 1;
+        }
+        if (data[leaf + i] == key) {
+            return leaf + i;
+        }
+        if (i != (logN() - 1) && data[leaf + i] < key && data[leaf + i + 1] > key) {
+            return leaf + i;
+        }
+    }
+
+    std::cerr << "Leaf of PMA too dense (is the PMA properly left packed?)" << std::endl;
+    assert(false); // in theory this should never happen, since that would mean leaf is completely full
+    return -1;
+}
+
+
+//TODO: needs to be updated
+void PMA::slide_left(uint32_t index) {
+    uint64_t right;
+    uint64_t left = data[index];
+    for (uint32_t i = index; i < leaf_position(leaf_number(index) + 1); i++) {
+        right = data[i + 1];
+        data[i] = right;
+        if (i == max_index) {
+            max_index = i - 1;
+        }
+        if (right == INT_NULL) {
+            break;
+        }
+    }
+}
+
+
+void PMA::slide_right(uint32_t index) {
+    uint64_t right;
+    uint64_t left = data[index];
+    for (uint32_t i = index; i < leaf_position(leaf_number(index) + 1); i++) {
+        right = data[i + 1];
+        data[i + 1] = left;
+        left = right;
+        if (i == max_index) {
+            max_index = i + 1;
+        }
+        if (left == INT_NULL) {
+            break;
+        }
+    }
+}
+
+void PMA::insert(uint64_t key) {
+    
+    auto start = std::chrono::high_resolution_clock::now();
+    uint32_t index = search(key);
+    auto search_end = std::chrono::high_resolution_clock::now();
+    if (index != INVALID_IDX && data[index] == key) {
+        return;
+    }
+    
+    num_elements += 1;
+    if (index == max_index) {
+        max_index = index + 1;
+    }
+    index = index + 1;
+
+    if (data[index] != INT_NULL) {
+        slide_right(index);
+    }
+
+    data[index] = key;
+
+
+    uint32_t len = logN();
+    uint32_t node_index = leaf_index(index);
+    uint32_t density_count = count_nonempty(node_index, len);
+
+    int level = 0;
+    while (density_count > (uint32_t) ((leaf_max - 0.01 * level) * len) && (len < length)) {
+        len *= 2;
+        uint32_t new_node_index = (node_index / len) * len;
+
+        if (new_node_index < node_index) {
+            density_count += count_nonempty(new_node_index, len / 2);
+        } else {
+            density_count += count_nonempty(new_node_index + len / 2, len / 2);
+        }
+        node_index = new_node_index;
+        level += 1;
+    }
+
+    if (len == length && density_count > (uint32_t) (leaf_max * len)) {
+        // need to double PMA, will disallow this
+        if (resize_allowed) {
+            resize();
+        }
+    }
+    else if (len > logN()) {
+        redistribute(node_index, len, density_count);
+    }
+
+    auto other_end = std::chrono::high_resolution_clock::now();
+
+}
+
+//TODO: needs to be updated
+void PMA::delete_edge(uint64_t key) {
+    
+    uint32_t index = search(key);
+    
+    if (index != INVALID_IDX && data[index] == key) {
+        slide_left(index);
+    } else {
+        return;
+    }
+    
+    num_elements -= 1;
+
+    if (index == max_index) {
+        max_index = index - 1;
+    }
+    
+    auto other_end = std::chrono::high_resolution_clock::now();
+
+}
+
+
+void PMA::redistribute(uint32_t index, uint32_t len, uint32_t density_count) {
+    temp.reserve(len);
+    temp.clear();
+    for (uint32_t i = index; i < len + index;) {
+        if (data[i] != INT_NULL) {
+            temp.push_back(data[i]);
+            data[i] = INT_NULL;
+            i += 1;
+        }
+        else {
+            i = next_leaf(i);
+        }
+    }
+    
+    uint32_t nl = len / logN();
+    uint32_t elems_per_leaf = density_count / nl;
+    uint32_t x = 0;
+    for (uint32_t leaf = 0; leaf < nl; ++leaf) {
+        uint32_t num_elems_to_copy = elems_per_leaf + (leaf < density_count % nl);
+        memcpy(&data[index + leaf * logN()], &temp[x], num_elems_to_copy * sizeof(uint64_t));
+        x += num_elems_to_copy;
+        
+        if (leaf == nl - 1 && (max_index >= index && max_index < index + len || max_index == INVALID_IDX)) {
+            if (num_elems_to_copy == 0) {
+                std::cout << "???" << std::endl;
+                exit(-1);
+            }
+            max_index = index + leaf * logN() + (num_elems_to_copy - 1);
+        }
+    }
+}
+
+
+
+void PMA::resize() {
+    length *= 2;
+    data.resize(length, INT_NULL);
+    redistribute(0, length, num_elements);
+}
+
+void PMA::print_pma(std::ostream& stream) {
+    stream << "[";
+    for (auto element : data) {
+        if (element == INT_NULL) {
+            stream << "null" << " ";
+        }
+        else {
+            stream << element << " ";
+        }
+    }
+    stream << "]" << std::endl;
+}
+
+void PMA::range(uint64_t left, uint64_t right, range_func& op) {
+    
+    uint32_t left_index = search(left);
+    uint32_t right_index = search(right);
+    
+    if (right_index == INVALID_IDX) {
+        return;
+    }
+
+    if (left_index == INVALID_IDX) {
+        left_index = 0;
+    }
+
+    if (data[left_index] < left || data[left_index] == INT_NULL) {
+        if (left_index == right_index) {
+            return;
+        } else {
+            left_index += 1;
+        }
+    }
+
+    right_index += 1;
+    for (uint32_t i = left_index; i < right_index; ) {
+        if (data[i] != INT_NULL) {
+            op(data[i]);
+            i += 1;
+        }
+        else {
+            i = next_leaf(i);
+        }
+    }
+}
+
+
+#endif
