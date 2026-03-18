@@ -11,63 +11,75 @@
 class PCSR{
 
     public:
-        PCSR(uint32_t size);
-        uint32_t size();
+        PCSR(VertexID size);
+        VertexID size();
+        ui get_vertices_count();
         
-        void insert_edge(uint32_t from, uint32_t to);
-        void delete_edge(uint32_t from, uint32_t to);
-        bool query_edge(uint32_t from, uint32_t to);
+        void insert_edge(VertexID from, VertexID to);
+        void delete_edge(VertexID from, VertexID to);
+        bool query_edge(VertexID from, VertexID to);
         
-        std::vector<uint32_t> edges(uint32_t from);
-        std::vector<std::pair<uint32_t, std::vector<uint32_t>>> adjacency_lists();
+        std::vector<VertexID> edges(VertexID from);
+        std::vector<std::pair<VertexID, std::vector<VertexID>>> adjacency_lists();
+
+        std::unordered_map<VertexID, VertexID> vertex_idx_map;
+        std::map<std::pair<VertexID, VertexID>, ui> wedge_map;
     
     private:
-        static uint64_t make_edge_tuple(uint32_t from, uint32_t to);
-        static std::pair<uint32_t, uint32_t> get_edge_tuple(uint64_t edge);
+        static uint64_t make_edge_tuple(VertexID from, VertexID to);
+        static std::pair<VertexID, VertexID> get_edge_tuple(uint64_t edge);
         PMA pma;
-        const uint32_t TO_ONES = 0xFFFFFFFF;
+        const VertexID TO_ONES = 0xFFFFFFFF;
 };
 
-PCSR::PCSR(uint32_t size) : pma(size) {}
+PCSR::PCSR(VertexID size) : pma(size) {}
 
-uint64_t PCSR::make_edge_tuple(uint32_t from, uint32_t to) { return (((uint64_t) from) << 32) | to; }
-std::pair<uint32_t, uint32_t> PCSR::get_edge_tuple(uint64_t edge) { return std::make_pair((uint32_t)(edge >> 32), (uint32_t)(edge << 32)); } 
+uint64_t PCSR::make_edge_tuple(VertexID from, VertexID to) { return (((uint64_t) from) << 32) | to; }
+std::pair<VertexID, VertexID> PCSR::get_edge_tuple(uint64_t edge) { return std::make_pair((VertexID)(edge >> 32), (VertexID)(edge << 32)); } 
 
-void PCSR::insert_edge(uint32_t from, uint32_t to) {
+VertexID PCSR::size(){
+    return pma.size();
+}
+
+ui PCSR::get_vertices_count(){
+    return pma.vertices_count;
+}
+
+void PCSR::insert_edge(VertexID from, VertexID to) {
     uint64_t edge = make_edge_tuple(from, to);
     pma.insert(edge);
 }
 
-void PCSR::delete_edge(uint32_t from, uint32_t to) {
+void PCSR::delete_edge(VertexID from, VertexID to) {
     uint64_t edge = make_edge_tuple(from, to);
     pma.delete_edge(edge);
 }
 
-bool PCSR::query_edge(uint32_t from, uint32_t to) {
+bool PCSR::query_edge(VertexID from, VertexID to) {
     uint64_t edge = make_edge_tuple(from, to);
     return pma.query(edge);
 }
 
-std::vector<uint32_t> PCSR::edges(uint32_t from) {
+std::vector<VertexID> PCSR::edges(VertexID from) {
     uint64_t from_padded = ((uint64_t) from) << 32;
-    std::vector<uint32_t> edge_list;
+    std::vector<VertexID> edge_list;
     auto edge_populater = PMA::range_func([&edge_list](uint64_t v) { 
-        edge_list.push_back((uint32_t) v); 
+        edge_list.push_back((VertexID) v); 
     });
     pma.range(from_padded, from_padded | TO_ONES, edge_populater);
     return edge_list;
 }
 
 
-std::vector<std::pair<uint32_t, std::vector<uint32_t>>> PCSR::adjacency_lists() {
+std::vector<std::pair<VertexID, std::vector<VertexID>>> PCSR::adjacency_lists() {
     
-    std::vector<std::pair<uint32_t, std::vector<uint32_t>>> adjacencies;
-    uint32_t curr_source = UINT32_MAX;
-    uint32_t* curr_source_ptr = &curr_source;
-    std::vector<uint32_t> adjacency;
+    std::vector<std::pair<VertexID, std::vector<VertexID>>> adjacencies;
+    VertexID curr_source = UINT32_MAX;
+    VertexID* curr_source_ptr = &curr_source;
+    std::vector<VertexID> adjacency;
 
     auto f = PMA::range_func([&adjacencies, &adjacency, curr_source_ptr](uint64_t v) {
-        uint32_t source, dest;
+        VertexID source, dest;
         source = v >> 32;
         dest = v;
         

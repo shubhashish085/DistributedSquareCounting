@@ -1,5 +1,4 @@
 #include "countingalgo.h"
-#include "constants.h"
 #include <mpi.h>
 
 
@@ -27,13 +26,11 @@ long long combinations(int n, int r) {
 }
 
 
-long long CountingAlgorithm::count_square(Graph* graph){
+void CountingAlgorithm::count_square(Graph* graph){
 
     VertexID* neighbors;
     ui nbr_count;
     std::pair<VertexID, VertexID> search_pair;
-
-    long long total_sq_count = 0;
 
     for(ui i = 0; i < graph->getVerticesCount(); i++){
         neighbors = graph->getVertexNeighbors(i, nbr_count);
@@ -51,19 +48,7 @@ long long CountingAlgorithm::count_square(Graph* graph){
                 }
             }
         }
-
     }
-
-
-    for(const auto& wedge : graph->wedge_map){
-
-        total_sq_count += combinations(wedge.second, 2);
-    }
-
-
-    total_sq_count /= 2;
-
-    return total_sq_count;
 }
 
 
@@ -147,9 +132,48 @@ void CountingAlgorithm::distributed_count_square(Graph* graph){
         }
 
         int buffer_size = buffer.size();
-        MPI_Send(&buffer_size, 1, MPI_INT, dest_rank, TAG_BUFFER_SIZE, comm);
+        MPI_Send(&buffer_size, 1, MPI_INT, dest_rank, TAG_BUFFER_SIZE, MPI_COMM_WORLD);
 
-        MPI_Send(buffer.data(), buffer_size, MPI_INT, dest_rank, TAG_BUFFER, comm);
+        MPI_Send(buffer.data(), buffer_size, MPI_INT, dest_rank, TAG_BUFFER, MPI_COMM_WORLD);
     }
 
+}
+
+
+void CountingAlgorithm::distributed_dynamic_count_square(PCSR* graph){
+
+    std::vector<VertexID> neighbors;
+    ui nbr_count;
+    std::pair<VertexID, VertexID> search_pair;
+
+    for(ui i = 0; i < graph->get_vertices_count(); i++){
+        neighbors = graph->edges(i);
+        nbr_count = neighbors.size();
+
+        for(ui j = 0; j < nbr_count; j++){
+            for(ui k = j+1; k < nbr_count; k++){
+                search_pair = get_wedge_endpoint_pair(neighbors[j], neighbors[k]);                                 
+                auto search = (graph->wedge_map).find(search_pair);
+
+                if(search == (graph->wedge_map).end()){
+                    graph->wedge_map[search_pair] = 1;
+                }else{
+                    graph->wedge_map[search_pair] = graph->wedge_map[search_pair] + 1;
+                }
+            }
+        }
+    }
+}
+
+
+
+
+
+long long CountingAlgorithm::aggregate_square_count(std::map<std::pair<VertexID, VertexID>, ui>& wedge_map, long long&  global_cnt){
+
+    for (const auto& [key, value] : wedge_map){
+        global_cnt += combinations(value, 2);
+    }
+
+    return global_cnt;
 }

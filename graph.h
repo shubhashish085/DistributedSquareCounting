@@ -44,6 +44,7 @@ public:
 public:
     void loadGraphFromFile(const std::string& file_path);
     void loadPartitionedGraphFromFile(const std::string& vertex_partition_file_path, const std::string& file_path, int partition_no);
+    void loadDBPartitionedGraphFromFile(const std::string& file_path, VertexID minVertexID, VertexID maxVertexID);
     void transformToAugmentedGraph(Graph* data_graph, Graph* augmented_graph);
     void printGraphMetaData();
 
