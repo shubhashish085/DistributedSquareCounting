@@ -1,53 +1,63 @@
 
-#ifndef HPEC_GRAPH_H
-#define HPEC_GRAPH_H
+#ifndef HPEC_WORKER_GRAPH_H
+#define HPEC_WORKER_GRAPH_H
 
 #include <unordered_map>
 #include <vector>
 #include <map>
 #include "types.h"
 
-class HpecGraph{
+class HpecWorkerGraph{
 
 public:
 
     std::vector<VertexID> vertices;
+    std::vector<Edge> edges;
     ui vertices_count;
     ui edges_count;
-    ui max_degree;
+
+    VertexID* vtx_map;
 
     ui* degrees;
-    ui* directed_degrees;
 
     ui* offsets;
-    ui* directed_offsets;
-
     VertexID * neighbors;
-    VertexID * directed_nbrs;
-
     ui* neighbors_offset;
-    ui* directed_nbrs_offset;
 
-    NodeID* vertex_partition_map;
-
-    HpecGraph(){
+    HpecWorkerGraph(){
         
         vertices_count = 0;
         edges_count = 0;
-        max_degree = 0;
 
         offsets = NULL;
         neighbors = NULL;
     }
 
-    ~HpecGraph() {
+    HpecWorkerGraph(GraphMetaData& meta_data){
+
+        vertices_count = meta_data.vtx_cnt;
+        edges_count = meta_data.edge_cnt;
+        edges.reserve(edges_count);
+
+        degrees = new ui[vertices_count];
+        offsets = new VertexID[vertices_count + 1];
+        neighbors_offset = new ui[vertices_count];
+        neighbors = new VertexID[edges_count];
+
+        std::fill(neighbors_offset, neighbors_offset + vertices_count, 0);
+        offsets[0] = 0;        
+    }
+
+    ~HpecWorkerGraph() {
         delete[] offsets;
         delete[] neighbors;
     }
 
-    void loadGraphFromFile(const std::string& file_path);
-    void transformToDirectedGraph();
-    
+    void fillData();
+
+    bool insert_edge(Edge& edge){
+        edges.push_back(edge);
+    }   
 
     const ui* getOffsets() const {
         return offsets;
@@ -67,11 +77,6 @@ public:
 
     const ui getVertexDegree(const VertexID id) const {
         return offsets[id + 1] - offsets[id];
-    }
-
-
-    const ui getGraphMaxDegree() const {
-        return max_degree;
     }
 
     ui * getVertexNeighbors(const VertexID id, ui& count) const {
@@ -95,20 +100,7 @@ public:
         return u > v;
     }
 
-    void order_vertices(VertexID& u, VertexID& v, NodeID& dst){
-
-        VertexID temp;
-
-        if(is_greater_in_order(u, v)){
-            temp = v;
-            v = u;
-            u = temp;
-        }
-
-        dst = vertex_partition_map[u];
-    }
-
-
+    
     bool checkEdgeExistence(VertexID u, VertexID v) const {
         if (getVertexDegree(u) < getVertexDegree(v)) {
             std::swap(u, v);

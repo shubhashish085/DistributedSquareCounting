@@ -19,32 +19,21 @@ double run_mpi_hpec_graph(const char *filename, DistributionCoordinator &hIO, in
     if (hIO.isMaster())
     {
         hpec_graph->loadGraphFromFile(filename);
+        hpec_graph->transformToDirectedGraph();
         GraphPartitioning::hpec_even_degree_partition(hpec_graph, n_partition);
 
         Edge edge;
         std::ifstream infile(filename);
 
-        if (!infile.is_open())
-        {
-            std::cout << "Can not open the graph file " << filename << " ." << std::endl;
-            exit(-1);
-        }
-
         VertexID begin, end;
-        std::string addition;
         NodeID dst_partition;
 
-        while (infile >> begin) // Stream edges
-        {
-            infile >> end;
-            infile >> addition;
-
-            edge.src = begin;
-            edge.dst = end;
-
-            hpec_graph->order_vertices(begin, end, dst_partition);
-
-            hIO.sendEdge(edge, dst_partition);
+        for(VertexID i = 0; i < hpec_graph->vertices_count; i++){
+            for(ui j = hpec_graph->directed_offsets[i]; j < hpec_graph->directed_offsets[i + 1]; j++){
+                edge.src = i;
+                edge.dst = hpec_graph->directed_nbrs[j];
+                hIO.sendEdge(edge, hpec_graph->vertex_partition_map[i]);
+            }
         }
 
         hIO.sendEndSignal();
@@ -55,28 +44,29 @@ double run_mpi_hpec_graph(const char *filename, DistributionCoordinator &hIO, in
 
         long long globalCnt = 0;
 
-        for (ui i = 0; i < workerNum; i++)
-        {
-            hIO.recvWedgeCnt();
-        }
-
 
         return globalCnt;
     }
     else
     {
 
-        /*HpecGraph *worker_graph = new HpecGraph();
-        
-        worker_graph->loadDBPartitionedGraphFromFile(filename, minVertexID, maxVertexID);
-        CountingAlgorithm::count_square(worker_graph);
+        HpecGraph *worker_graph = new HpecGraph();
+        Edge edge;
 
-        hIO.sendWedgeCnt(worker_graph->wedge_map);
+
+        while (hIO.recvEdge(edge))
+        {
+            if (edge.add)
+            {
+                
+            }
+        }
+
 
         double workerCompCost = (double(clock() - begin) - hIO.getIOCPUTime()) / CLOCKS_PER_SEC;
 
         hIO.sendTime(workerCompCost);
-        return 0;*/
+        return 0;
     }
 }
 

@@ -24,6 +24,23 @@ const VertexID PCSR_INITIAL_SIZE = 100000;
 const int TAG_BUFFER = 1;
 const int TAG_BUFFER_SIZE = 2;
 
+struct GraphMetaData
+{
+	static const unsigned short szAttr = 2;
+	ui vtx_cnt;
+    ui edge_cnt;
+	NodeID partition_id;
+
+	GraphMetaData():vtx_cnt(INVALID_VID), edge_cnt(INVALID_VID), partition_id(INVALID_MID) {}
+
+	inline void setValue(VertexID v_cnt, VertexID e_cnt, NodeID p_id)
+	{
+		vtx_cnt = v_cnt;
+        edge_cnt = e_cnt;
+		partition_id = p_id;
+	}
+};
+
 struct Edge 
 {
 	static const unsigned short szAttr 	= 3;
@@ -54,6 +71,8 @@ struct WedgeCnt
 	VertexID first_vtx;
     VertexID third_vtx;
 	VertexID cnt;
+
+	WedgeCnt():first_vtx(INVALID_VID), third_vtx(INVALID_VID) {}
 	inline void setValue(VertexID first, VertexID third, VertexID iCnt)
 	{
 		first_vtx = first;
@@ -61,6 +80,8 @@ struct WedgeCnt
 		cnt = iCnt;
 	}
 };
+
+
 
 
 #endif
