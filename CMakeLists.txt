@@ -11,20 +11,28 @@ set(CMAKE_CXX_FLAGS
 set(DISTRIBUTED_SQUARE_COUNTING_FILE_LIST
         commandparser.h
         commandparser.cpp
-        constants.h
         countingalgo.h
         countingalgo.cpp
-        graph.cpp
+        distributedrun.hpp
+        distributedrun.cpp
+        distributioncoordinator.hpp
+        distributioncoordinator.cpp
         graph.h
-        loadbalancer.h
-        loadbalancer.cpp
-        streaminggraph.h
-        streaminggraph.cpp
-        types.h
-        StudyPerformance.cpp)
+        graph.cpp
+        masterdynamicgraph.hpp
+        matchingcommand.h
+        matchingcommand.cpp
+        partition.hpp
+        partition.cpp
+        pcsr.h
+        pcsr.cpp
+        pma.h
+        pma.cpp        
+        StudyPerformance.cpp
+        types.h)
 
 
-add_executable(SquareCounting.out ${DISTRIBUTED_SQUARE_COUNTING_FILE_LIST})
+add_executable(DistSquareCounting.out ${DISTRIBUTED_SQUARE_COUNTING_FILE_LIST})
 
 find_package(MPI REQUIRED)
-target_link_libraries(SquareCounting.out PUBLIC MPI::MPI_CXX)
+target_link_libraries(DistSquareCounting.out PUBLIC MPI::MPI_CXX)

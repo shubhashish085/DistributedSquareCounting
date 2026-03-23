@@ -3,6 +3,7 @@
 
 #include <map>
 #include "graph.h"
+#include "hpecgraph.hpp"
 #include "masterdynamicgraph.hpp"
 #include "types.h"
 
@@ -11,6 +12,7 @@ class GraphPartitioning {
 public:
 
     static void even_degree_partition(Graph* data_graph, VertexID*& vtx_partition_array, ui& n_partition);
+    static void hpec_even_degree_partition(HpecGraph* data_graph, ui& n_partition);
     static void even_degree_partition(Graph* data_graph, ui& n_partition, ui*& partition_limit);
 
     static long long hash_vertex(VertexID& v, ui& numberOfPartitions);

@@ -1,0 +1,135 @@
+#include <fstream>
+#include "partition.hpp"
+#include "hpecgraph.hpp"
+#include "distributedrun.hpp"
+#include "distributioncoordinator.hpp"
+
+double run_mpi_hpec_graph(const char *filename, DistributionCoordinator &hIO, int workerNum, int lenBuf, double &srcCompCost, double &workerCompCostMax, double &workerCompCostSum)
+{
+    clock_t begin = clock();
+
+    hIO.init(lenBuf, workerNum);
+
+    ui *partition_limit = new ui[workerNum];
+    ui n_partition = workerNum;
+
+    int rank = hIO.getRank();
+    HpecGraph *hpec_graph = new HpecGraph();
+
+    if (hIO.isMaster())
+    {
+        hpec_graph->loadGraphFromFile(filename);
+        GraphPartitioning::hpec_even_degree_partition(hpec_graph, n_partition);
+
+        Edge edge;
+        std::ifstream infile(filename);
+
+        if (!infile.is_open())
+        {
+            std::cout << "Can not open the graph file " << filename << " ." << std::endl;
+            exit(-1);
+        }
+
+        VertexID begin, end;
+        std::string addition;
+        NodeID dst_partition;
+
+        while (infile >> begin) // Stream edges
+        {
+            infile >> end;
+            infile >> addition;
+
+            edge.src = begin;
+            edge.dst = end;
+
+            hpec_graph->order_vertices(begin, end, dst_partition);
+
+            hIO.sendEdge(edge, dst_partition);
+        }
+
+        hIO.sendEndSignal();
+    }
+
+    if (hIO.isMaster())
+    {
+
+        long long globalCnt = 0;
+
+        for (ui i = 0; i < workerNum; i++)
+        {
+            hIO.recvWedgeCnt();
+        }
+
+
+        return globalCnt;
+    }
+    else
+    {
+
+        /*HpecGraph *worker_graph = new HpecGraph();
+        
+        worker_graph->loadDBPartitionedGraphFromFile(filename, minVertexID, maxVertexID);
+        CountingAlgorithm::count_square(worker_graph);
+
+        hIO.sendWedgeCnt(worker_graph->wedge_map);
+
+        double workerCompCost = (double(clock() - begin) - hIO.getIOCPUTime()) / CLOCKS_PER_SEC;
+
+        hIO.sendTime(workerCompCost);
+        return 0;*/
+    }
+}
+
+
+void run_exp_hpec_graph(const char *input, const char *outPath, DistributionCoordinator &hIO, int workerNum, int bufLen)
+{
+
+    int seed = 0;
+
+    struct timeval diff, startTV, endTV;
+
+    if (hIO.isMaster())
+    {
+        struct stat sb;
+        if (stat(outPath, &sb) == 0)
+        {
+            if (S_ISDIR(sb.st_mode)) // TODO. directory is exists
+                ;
+            else if (S_ISREG(sb.st_mode)) // TODO. No directory but a regular file with same name
+                ;
+            else // TODO. handle undefined cases.
+                ;
+        }
+        else
+        {
+            mkdir(outPath, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
+        }
+    }
+
+    if (hIO.isMaster())
+    {
+        gettimeofday(&startTV, NULL);
+
+        std::vector<float> nodeToCnt;
+
+        double srcCompCost = 0;
+        double workerCompCostMax = 0;
+        double workerCompCostSum = 0;
+
+        long long globalCnt = run_mpi_for_dynamic_network(input, hIO, workerNum, bufLen, srcCompCost, workerCompCostMax, workerCompCostSum);
+
+        gettimeofday(&endTV, NULL);
+
+        timersub(&endTV, &startTV, &diff);
+
+        double elapsedTime = diff.tv_sec * 1000 + diff.tv_usec / 1000;
+    }
+    else
+    {
+        double srcCompCost = 0;
+        double workerCompCostMax = 0;
+        double workerCompCostSum = 0;
+        std::vector<float> nodeToCnt;
+        run_mpi_for_dynamic_network(input, hIO, workerNum, bufLen, srcCompCost, workerCompCostMax, workerCompCostSum);
+    }
+}

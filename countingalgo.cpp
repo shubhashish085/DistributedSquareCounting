@@ -59,9 +59,7 @@ void CountingAlgorithm::distributed_count_square(Graph* graph){
     std::pair<VertexID, VertexID> search_pair;
 
     VertexID wedge_begin, wedge_end;
-
     std::vector<VertexID> buffer;
-    std::pair<VertexID, VertexID> search_pair;
 
     long long total_sq_count = 0;    
 

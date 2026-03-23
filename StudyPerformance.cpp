@@ -37,7 +37,7 @@ int main(int argc, char** argv) {
     ui line_count = 0, comment_line_count = 4;
     
 
-    PCSR pcsr(1 << 4);
+    /*PCSR pcsr(1 << 4);
 
     while (std::getline(infile, input_line)) {
 
@@ -63,7 +63,7 @@ int main(int argc, char** argv) {
 
     }
 
-    infile.close();
+    infile.close();*/
 
     return 0;
 }

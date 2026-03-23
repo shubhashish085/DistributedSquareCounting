@@ -10,7 +10,7 @@ typedef unsigned int ui;
 typedef double decimal;
 
 typedef uint32_t VertexID;
-typedef int NodeID;
+typedef short NodeID;
 typedef ui LabelID;
 
 const VertexID INVALID_VID(std::numeric_limits<VertexID>::max());
@@ -18,6 +18,8 @@ const NodeID INVALID_MID(std::numeric_limits<NodeID>::max());
 
 const int MPI_MASTER = 0;
 const int missingMId = -1;
+
+const VertexID PCSR_INITIAL_SIZE = 100000;
 
 const int TAG_BUFFER = 1;
 const int TAG_BUFFER_SIZE = 2;

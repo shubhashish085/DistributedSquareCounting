@@ -50,6 +50,52 @@ void GraphPartitioning::even_degree_partition(Graph* data_graph, VertexID*& vtx_
 }
 
 
+void GraphPartitioning::hpec_even_degree_partition(HpecGraph* data_graph, ui& n_partition) {
+
+
+    ui* cand_degree_offset = new ui[data_graph->getVerticesCount() + 1];
+    cand_degree_offset[0] = 0;
+    ui* candidate_limit = new ui[n_partition];
+
+    for(ui j = 0; j < data_graph->getVerticesCount() ; j++){
+        cand_degree_offset[j + 1] = cand_degree_offset[j] + data_graph->getVertexDegree(j);
+    }
+
+    ui total_degree = cand_degree_offset[data_graph->getVerticesCount()];
+    ui avg_degree = total_degree / n_partition;
+
+    ui last_node_degree_offset = 0;
+    ui node_idx = 0;
+
+    for(ui j = 0; j < data_graph->getVerticesCount(); j++){
+        if(node_idx == n_partition - 1){
+            candidate_limit[node_idx++] = data_graph->getVerticesCount() - 1;
+            last_node_degree_offset = cand_degree_offset[data_graph->getVerticesCount()];
+            break;
+        }else if(j == data_graph->getVerticesCount() - 1){
+            candidate_limit[node_idx++] = j;
+            last_node_degree_offset = cand_degree_offset[j + 1];
+        }else if(cand_degree_offset[j + 1] - last_node_degree_offset >= avg_degree){
+            candidate_limit[node_idx++] = j;
+            last_node_degree_offset = cand_degree_offset[j + 1];
+        }
+    }
+
+    ui start_point = 0, k  = 0;
+    while (k < n_partition){
+
+        for(ui i = start_point; i <= candidate_limit[k]; i++){
+            data_graph->vertex_partition_map[i] = k;
+        }
+
+        start_point = candidate_limit[k];
+        k++;
+    }
+        
+}
+
+
+
 void GraphPartitioning::even_degree_partition(Graph* data_graph, ui& n_partition, ui*& partition_limit) {
 
 
@@ -80,6 +126,20 @@ void GraphPartitioning::even_degree_partition(Graph* data_graph, ui& n_partition
         }
     }        
 }
+
+long long GraphPartitioning::hash_vertex(VertexID& v, ui& numberOfPartitions) {
+    uint32_t x = v;
+
+    // 32-bit mix (MurmurHash3 finalizer style)
+    x ^= x >> 16;
+    x *= 0x85ebca6bU;
+    x ^= x >> 13;
+    x *= 0xc2b2ae35U;
+    x ^= x >> 16;
+
+    return static_cast<long long>(x % numberOfPartitions);
+}
+
 
 
 void GraphPartitioning::hash_dyn_partition(MasterGraph* master_graph, Edge& edge, NodeID& u_partition, NodeID& v_partition){

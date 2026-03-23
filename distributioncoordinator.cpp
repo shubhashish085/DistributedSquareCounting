@@ -100,6 +100,9 @@ bool DistributionCoordinator::bCastEdge(Edge &iEdge)
 	return true;
 }
 
+
+
+
 bool DistributionCoordinator::bCastPartitionLimit(ui*& partition_limit, int& workernum){
 
     
@@ -114,6 +117,15 @@ bool DistributionCoordinator::IrecvEdge(Edge *buf, MPI_Request &iReq)
 
 bool DistributionCoordinator::IsendEdge(Edge *buf, int mid, MPI_Request &iReq){
 	MPI_Isend(buf, lenBuf, MPI_TYPE_EDGE, mid + 1, TAG_STREAM, MPI_COMM_WORLD, &iReq);
+	return true;
+}
+
+bool DistributionCoordinator::sendEdge(const Edge &iEdge, NodeID dst)
+{
+	Edge tmpEdge = iEdge;
+	commCostDistribute++;
+	eBuf[dst].putNext(tmpEdge);
+
 	return true;
 }
 

@@ -15,8 +15,14 @@ double run_mpi_for_static_network(const char* filename, DistributionCoordinator 
 
 double run_mpi_for_dynamic_network(const char* filename, DistributionCoordinator &coordinator, int workerNum, int lenBuf, double &srcCompCost, double &workerCompCostMax, double &workerCompCostSum);
 
+double run_mpi_for_hpec_graph(const char* filename, DistributionCoordinator &coordinator, int workerNum, int lenBuf, 
+    double &srcCompCost, double &workerCompCostMax, double &workerCompCostSum);
+
 void run_exp (const char* input, const char* outPath, DistributionCoordinator &coordinator, int workerNum, int bufLen=1000);
 
 void run_exp_dynamic_network (const char* input, const char* outPath, DistributionCoordinator &coordinator, int workerNum, int bufLen=1000);
+
+void run_exp_hpec_graph(const char* input, const char* outPath, DistributionCoordinator &coordinator, int workerNum, int bufLen=1000);
+
 
 #endif
