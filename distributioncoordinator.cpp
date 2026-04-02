@@ -30,7 +30,7 @@ DistributionCoordinator::DistributionCoordinator(int &argc, char** &argv)//, bit
 	arrType[1] = MPI_DOUBLE;
 	offsets[0] = offsetof(WedgeCnt, first_vtx);
     offsets[1] = offsetof(WedgeCnt, third_vtx);
-	offsets[1] = offsetof(WedgeCnt, cnt);
+	offsets[2] = offsetof(WedgeCnt, cnt);
 	MPI_Type_create_struct(WedgeCnt::szAttr, lenAttr, offsets, arrType, &MPI_TYPE_WEDGE_CNT);
 	MPI_Type_commit(&MPI_TYPE_WEDGE_CNT);
 }

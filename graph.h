@@ -12,6 +12,9 @@ class Graph{
 public:
 
     std::vector<VertexID> vertices;
+    std::map<VertexID, VertexID> ghost_vertex_map;
+    std::map<VertexID, VertexID> ghost_vertex_idx_map;
+    ui ghost_vertices_count;
     ui vertices_count;
     ui edges_count;
     ui max_degree;
@@ -20,9 +23,14 @@ public:
 
     ui* offsets;
     VertexID * neighbors;
+    NodeID* partition;
+
+    ui* g_offsets;
+    VertexID * g_neighbors;
     
     std::unordered_map<VertexID, VertexID> vertex_idx_map;
     std::map<std::pair<VertexID, VertexID>, ui> wedge_map;
+    std::map<std::pair<VertexID, VertexID>, ui> wedge_map_comm; 
 
     Graph(){
         
@@ -33,7 +41,6 @@ public:
         offsets = NULL;
         neighbors = NULL;
         wedge_map.clear();
-
     }
 
     ~Graph() {
@@ -76,6 +83,13 @@ public:
     }
 
     ui * getVertexNeighbors(const VertexID id, ui& count) const {
+        count = offsets[id + 1] - offsets[id]; // used for neighbor count
+        return neighbors + offsets[id];
+    }
+
+    ui * getVertexNeighbors_partitioned(const VertexID vid, ui& count) const {
+        
+        VertexID id = (vertex_idx_map.find(vid))->second;
         count = offsets[id + 1] - offsets[id]; // used for neighbor count
         return neighbors + offsets[id];
     }

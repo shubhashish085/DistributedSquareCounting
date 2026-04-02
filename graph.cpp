@@ -300,6 +300,7 @@ void Graph::loadPartitionedGraphFromFile(const std::string& vertex_partition_fil
     bool contains_in_partition = false;
 
     std::ifstream vertex_partition_file(vertex_partition_file_path);
+    std::ifstream vtx_ptn_file(vertex_partition_file_path);
     std::ifstream infile(file_path);
 
     if (!vertex_partition_file.is_open() || !infile.is_open()) {
@@ -307,21 +308,34 @@ void Graph::loadPartitionedGraphFromFile(const std::string& vertex_partition_fil
         exit(-1);
     }
 
+    ui total_vertices_count = 0;
 
-    while(infile >> vertex_id){
 
-        infile >> partition_id;
+    while(vertex_partition_file >> vertex_id){
+
+        vertex_partition_file >> partition_id;
 
         if(partition_id == partition_no){
             vertices.push_back(vertex_id);
             vertex_idx_map[vertex_id] = vertices_count;
             vertices_count++;
         }
+
+        total_vertices_count++;
     }
 
     vertex_partition_file.close();
 
+    partition = new NodeID[total_vertices_count];
+
+    while (vtx_ptn_file >> vertex_id)
+    {
+        vtx_ptn_file >> partition_id;
+        partition[vertex_id] = partition_id;
+    }
+
     degrees = new ui[vertices_count];
+    ghost_vertices_count = 0;
     std::fill(degrees, degrees + vertices_count, 0);
 
     char type;
@@ -343,19 +357,48 @@ void Graph::loadPartitionedGraphFromFile(const std::string& vertex_partition_fil
         }
     }
 
+    ui ghost_edges_count = 0;
+
     while(infile >> begin) {
 
         infile >> end;
 
         if (begin != end && begin < vertices_count && end < vertices_count) {
+
+            if(partition[begin] != partition_no && partition[end] == partition_no){
+
+                ghost_edges_count++;
+
+                if(ghost_vertex_map.find(begin) != ghost_vertex_map.end()){
+                   ghost_vertex_map[begin] += 1; 
+                }else {
+                    ghost_vertex_map[begin] = 1;
+                    ghost_vertices_count += 1;
+                }
+                
+            }
+
+            if(partition[begin] == partition_no && partition[end] != partition_no){
+
+                ghost_edges_count++;
+
+                if(ghost_vertex_map.find(end) != ghost_vertex_map.end()){
+                   ghost_vertex_map[end] += 1; 
+                }else {
+                    ghost_vertex_map[end] = 1;
+                    ghost_vertices_count += 1;
+                }
+            }
+
             if(vertex_idx_map.find(begin) != vertex_idx_map.end()){
                 degrees[vertex_idx_map[begin]] += 1;
                 contains_in_partition = true;
             }
+
             if(vertex_idx_map.find(end) != vertex_idx_map.end()){
                 degrees[vertex_idx_map[end]] += 1;
                 contains_in_partition = true;
-            }
+            } 
 
             if(contains_in_partition){
                 edges_count++;
@@ -368,21 +411,29 @@ void Graph::loadPartitionedGraphFromFile(const std::string& vertex_partition_fil
     std::ifstream input_file(file_path);
 
     offsets = new ui[vertices_count +  1];
+    g_offsets = new ui[ghost_vertices_count + 1];
     offsets[0] = 0;
+    g_offsets[0] = 0;    
 
     neighbors = new VertexID[edges_count * 2];
+    g_neighbors = new VertexID[ghost_edges_count];
     max_degree = 0;
 
     std::vector<ui> neighbors_offset(vertices_count, 0);// used for adjust neighbors with offset
+    std::vector<ui> g_neighbors_offset(ghost_vertices_count, 0);
+    VertexID id;
 
-    for(VertexID i = 0; i < vertices_count; i++){
-        
-        VertexID id = vertices[i];
+    for(VertexID i = 0; i < vertices_count; i++){        
+        id = vertices[i];
         offsets[id + 1] = offsets[id] + degrees[id];
+    }
 
-        if (degrees[id] > max_degree) {
-            max_degree = degrees[id];
-        }
+    VertexID i = 0;
+    for (const auto& [key, value] : ghost_vertex_map) {
+
+        ghost_vertex_idx_map[key] = i;
+        g_offsets[i + 1] = g_offsets[i] + value;
+        i++;
     }
 
     line_count = 0;
@@ -393,6 +444,9 @@ void Graph::loadPartitionedGraphFromFile(const std::string& vertex_partition_fil
             break;
         }
     }
+
+    VertexID ghost_idx;
+    ui g_offset;
 
     while(input_file >> begin){
 
@@ -420,12 +474,31 @@ void Graph::loadPartitionedGraphFromFile(const std::string& vertex_partition_fil
             neighbors[offset] = begin;
             neighbors_offset[end] += 1;
         }
+
+        if(partition[begin] != partition_no && partition[end] == partition_no){
+            ghost_idx = ghost_vertex_idx_map[begin];
+            g_offset = g_offsets[ghost_idx] + g_neighbors_offset[ghost_idx];
+            g_neighbors[g_offset] = end;
+            g_neighbors_offset[ghost_idx] += 1;                 
+        }
+
+        if(partition[begin] == partition_no && partition[end] != partition_no){
+            ghost_idx = ghost_vertex_idx_map[end];
+            g_offset = g_offsets[ghost_idx] + g_neighbors_offset[ghost_idx];
+            g_neighbors[g_offset] = begin;
+            g_neighbors_offset[ghost_idx] += 1;              
+        }
+
     }
 
     input_file.close();    
 
     for (ui i = 0; i < vertices_count; ++i) {
         std::sort(neighbors + offsets[i], neighbors + offsets[i + 1]);
+    }
+
+    for (ui i = 0; i < ghost_vertices_count; i++){
+        std::sort(g_neighbors + g_offsets[i], g_neighbors + g_offsets[i + 1]);
     }
 
 }

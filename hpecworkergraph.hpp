@@ -16,13 +16,16 @@ public:
     ui vertices_count;
     ui edges_count;
 
-    VertexID* vtx_map;
+    
 
     ui* degrees;
 
     ui* offsets;
     VertexID * neighbors;
     ui* neighbors_offset;
+
+    std::map<VertexID, VertexID> vtx_map;
+    std::map<std::pair<VertexID, VertexID>, ui> wedge_map;
 
     HpecWorkerGraph(){
         
@@ -38,6 +41,7 @@ public:
         vertices_count = meta_data.vtx_cnt;
         edges_count = meta_data.edge_cnt;
         edges.reserve(edges_count);
+
 
         degrees = new ui[vertices_count];
         offsets = new VertexID[vertices_count + 1];

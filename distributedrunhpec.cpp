@@ -1,6 +1,7 @@
 #include <fstream>
 #include "partition.hpp"
 #include "hpecgraph.hpp"
+#include "hpecworkergraph.hpp"
 #include "distributedrun.hpp"
 #include "distributioncoordinator.hpp"
 
@@ -50,7 +51,7 @@ double run_mpi_hpec_graph(const char *filename, DistributionCoordinator &hIO, in
     else
     {
 
-        HpecGraph *worker_graph = new HpecGraph();
+        HpecWorkerGraph *worker_graph = new HpecWorkerGraph();
         Edge edge;
 
 
@@ -58,9 +59,11 @@ double run_mpi_hpec_graph(const char *filename, DistributionCoordinator &hIO, in
         {
             if (edge.add)
             {
-                
+                worker_graph->insert_edge(edge);
             }
         }
+
+        //worker_graph->fillData();
 
 
         double workerCompCost = (double(clock() - begin) - hIO.getIOCPUTime()) / CLOCKS_PER_SEC;

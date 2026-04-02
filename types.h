@@ -23,6 +23,7 @@ const VertexID PCSR_INITIAL_SIZE = 100000;
 
 const int TAG_BUFFER = 1;
 const int TAG_BUFFER_SIZE = 2;
+const int TAG_COUNT = 3;
 
 struct GraphMetaData
 {
