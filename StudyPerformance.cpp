@@ -9,13 +9,36 @@
 #include <fstream> 
 #include <sstream>
 #include <iostream>
+#include <string>
 
 #include "matchingcommand.h"
 #include "pcsr.h"
 #include "types.h"
+#include "countingalgo.h"
+
+int main(int argc, char** argv){
+
+    std::string input_data_graph_file = argv[1];
+    std::string vertex_partition_file = argv[2];
+    std::string partition_no = argv[3];
+
+    int n_partition = std::stoi(partition_no);
+
+    Graph* graph = new Graph();
+    graph->loadGraphFromFile(input_data_graph_file);
+
+    long long comm_cost = CountingAlgorithm::naive_comm_cost_analysis(graph, vertex_partition_file, n_partition);
+
+    std::cout << "Input Graph File : " << input_data_graph_file << std::endl;
+    std::cout << "Vertex Partition File : " << vertex_partition_file << std::endl;
+    std::cout << "Partition No : " << n_partition << std::endl;
+    std::cout << "Naive Communication Cost : " << comm_cost << std::endl;
+
+}
 
 
-int main(int argc, char** argv) {
+
+/*int main(int argc, char** argv) {
     
     
     MatchingCommand command(argc, argv);
@@ -63,7 +86,7 @@ int main(int argc, char** argv) {
 
     }
 
-    infile.close();*/
+    infile.close();
 
     return 0;
-}
+}*/
