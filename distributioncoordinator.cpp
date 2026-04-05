@@ -17,12 +17,14 @@ DistributionCoordinator::DistributionCoordinator(int &argc, char** &argv)//, bit
 
 	// Initialize and Register struct EDGE, ELEMCNT information
 	int          lenAttr[Edge::szAttr] = {1, 1};
-	MPI_Datatype arrType[Edge::szAttr] = {MPI_UNSIGNED, MPI_UNSIGNED, MPI_CXX_BOOL};
+	MPI_Datatype arrType[Edge::szAttr] = {MPI_UNSIGNED, MPI_UNSIGNED, MPI_SHORT, MPI_SHORT, MPI_CXX_BOOL};
 
 	MPI_Aint     offsets[Edge::szAttr];
 	offsets[0] = offsetof(Edge, src);
 	offsets[1] = offsetof(Edge, dst);
-	offsets[2] = offsetof(Edge, add);
+	offsets[2] = offsetof(Edge, src_ptn);
+	offsets[3] = offsetof(Edge, dst_ptn);
+	offsets[4] = offsetof(Edge, add);
 	MPI_Type_create_struct(Edge::szAttr, lenAttr, offsets, arrType, &MPI_TYPE_EDGE);
 	MPI_Type_commit(&MPI_TYPE_EDGE);
 

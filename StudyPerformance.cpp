@@ -15,8 +15,9 @@
 #include "pcsr.h"
 #include "types.h"
 #include "countingalgo.h"
+#include "distributedrun.hpp"
 
-int main(int argc, char** argv){
+/*int main(int argc, char** argv){
 
     std::string input_data_graph_file = argv[1];
     std::string vertex_partition_file = argv[2];
@@ -34,7 +35,26 @@ int main(int argc, char** argv){
     std::cout << "Partition No : " << n_partition << std::endl;
     std::cout << "Naive Communication Cost : " << comm_cost << std::endl;
 
+}*/
+
+
+int main(int argc, char** argv){
+
+    std::string input_data_graph_file = argv[1];
+    std::string output_data_graph_file = "output.txt";
+    std::string partition_no = argv[2];
+
+    int n_partition = std::stoi(partition_no);
+    DistributionCoordinator hIO(argc, argv);
+
+    std::cout << "Input Graph File : " << input_data_graph_file << std::endl;
+    std::cout << "Partition No : " << n_partition << std::endl;
+
+    run_exp_dynamic_network(input_data_graph_file, output_data_graph_file, hIO, n_partition, BATCH_LENGTH);
+    
+    //std::cout << "Naive Communication Cost : " << comm_cost << std::endl;
 }
+
 
 
 

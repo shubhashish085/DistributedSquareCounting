@@ -444,6 +444,79 @@ long long CountingAlgorithm::communication_cost_analysis(const std::string &vert
     return comm_cost;
 }
 
+long long CountingAlgorithm::dist_comm_cost_analysis(PCSR *graph, std::vector<Edge> batched_edges, int rank)
+{
+    long long comm_cost = 0;
+
+    VertexID *neighbors;
+    ui nbr_count;
+    std::pair<VertexID, VertexID> search_pair;
+
+    for(ui i = 0; i < batched_edges.size(); i++){
+
+        graph->vertex_ptn_map[batched_edges[i].src] = batched_edges[i].src_ptn;
+        graph->vertex_ptn_map[batched_edges[i].dst] = batched_edges[i].dst_ptn;
+
+
+        if(graph->vertex_ptn_map[batched_edges[i].src] == rank){
+
+            graph->insert_edge(batched_edges[i].src, batched_edges[i].dst);
+
+            std::vector<VertexID> nbrs = graph->edges(batched_edges[i].src);
+
+            for(ui j = 0; j < nbrs.size(); j++){
+
+                search_pair = get_wedge_endpoint_pair(batched_edges[i].dst, nbrs[j]);
+                if (graph->vertex_ptn_map[batched_edges[i].dst] != graph->vertex_ptn_map[nbrs[j]])
+                {
+                    auto search = (graph->wedge_map_comm).find(search_pair);
+                    if (search == (graph->wedge_map_comm).end())
+                    {
+                        graph->wedge_map_comm[search_pair] = 1;
+                    }
+                    else
+                    {
+                        graph->wedge_map_comm[search_pair] = graph->wedge_map_comm[search_pair] + 1;
+                    }
+                }
+
+            }
+        }
+
+        if(graph->vertex_ptn_map[batched_edges[i].src] == rank){
+
+            graph->insert_edge(batched_edges[i].dst, batched_edges[i].src);
+
+            std::vector<VertexID> nbrs = graph->edges(batched_edges[i].dst);
+
+            for(ui j = 0; j < nbrs.size(); j++){
+
+                search_pair = get_wedge_endpoint_pair(batched_edges[i].src, nbrs[j]);
+                if (graph->vertex_ptn_map[batched_edges[i].src] != graph->vertex_ptn_map[nbrs[j]])
+                {
+                    auto search = (graph->wedge_map_comm).find(search_pair);
+                    if (search == (graph->wedge_map_comm).end())
+                    {
+                        graph->wedge_map_comm[search_pair] = 1;
+                    }
+                    else
+                    {
+                        graph->wedge_map_comm[search_pair] = graph->wedge_map_comm[search_pair] + 1;
+                    }
+                }
+            }
+        }       
+
+    }
+
+    batched_edges.clear();
+
+    comm_cost += (graph->wedge_map_comm).size();
+    (graph->wedge_map_comm).clear();
+
+    return comm_cost;
+}
+
 void CountingAlgorithm::distributed_count_square(Graph *graph)
 {
 

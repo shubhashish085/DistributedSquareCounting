@@ -24,9 +24,10 @@ class PCSR{
         std::vector<std::pair<VertexID, std::vector<VertexID>>> adjacency_lists();
 
         std::unordered_map<VertexID, VertexID> vertex_idx_map;
+        std::unordered_map<VertexID, NodeID> vertex_ptn_map;
         std::map<std::pair<VertexID, VertexID>, ui> wedge_map;
+        std::map<std::pair<VertexID, VertexID>, ui> wedge_map_comm; 
     
-    private:
         static uint64_t make_edge_tuple(VertexID from, VertexID to);
         static std::pair<VertexID, VertexID> get_edge_tuple(uint64_t edge);
         PMA pma;

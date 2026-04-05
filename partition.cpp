@@ -259,7 +259,7 @@ long long GraphPartitioning::hash_vertex(VertexID& v, ui& numberOfPartitions) {
     x *= 0xc2b2ae35U;
     x ^= x >> 16;
 
-    return static_cast<long long>(x % numberOfPartitions);
+    return (static_cast<long long>(x % (numberOfPartitions - 1)) + 1);
 }
 
 
@@ -275,7 +275,7 @@ void GraphPartitioning::hash_dyn_partition(MasterGraph* master_graph, Edge& edge
 
     argmax = hash_vertex(u, master_graph->numberOfPartitions);
 
-    for(int i = 0 ; i < master_graph->numberOfPartitions ; i++) {
+    for(int i = 1 ; i < master_graph->numberOfPartitions ; i++) {
         master_graph->numberOfEdges += u_numberOfNeighbours[i];
         if(i != argmax) {
             master_graph->numberOfEdgecut += u_numberOfNeighbours[i];
@@ -290,7 +290,7 @@ void GraphPartitioning::hash_dyn_partition(MasterGraph* master_graph, Edge& edge
 
     argmax = hash_vertex(v, master_graph->numberOfPartitions);
 
-    for(int i = 0 ; i < master_graph->numberOfPartitions ; i++) {
+    for(int i = 1 ; i < master_graph->numberOfPartitions ; i++) {
         master_graph->numberOfEdges += v_numberOfNeighbours[i];
         if(i != argmax) {
             master_graph->numberOfEdgecut += v_numberOfNeighbours[i];
@@ -301,6 +301,9 @@ void GraphPartitioning::hash_dyn_partition(MasterGraph* master_graph, Edge& edge
 
     u_numberOfNeighbours[v_partition] += 1;
     v_numberOfNeighbours[u_partition] += 1;
+
+    edge.src_ptn = u_partition;
+    edge.dst_ptn = v_partition;
 }
 
 void GraphPartitioning::ldg_dyn_partition(MasterGraph* master_graph, Edge& edge, NodeID& u_partition, NodeID& v_partition){
@@ -326,9 +329,9 @@ void GraphPartitioning::ldg_dyn_partition(MasterGraph* master_graph, Edge& edge,
 
         u_numberOfNeighbours = master_graph->get_partition_wise_neighbors(u);
         
-        for(int i = 0; i < master_graph->numberOfPartitions; i++){
+        for(int i = 1; i < master_graph->numberOfPartitions; i++){
             
-            next = (1 - (master_graph->partitionSizes[i] / master_graph->capacity)) * u_numberOfNeighbours[i];
+            next = (1.0 - (double)(master_graph->partitionSizes[i] / master_graph->capacity)) * u_numberOfNeighbours[i];
             if(next > result){
                 if(master_graph->partitionSizes[i] < master_graph->capacity){
                     result = next;
@@ -356,7 +359,7 @@ void GraphPartitioning::ldg_dyn_partition(MasterGraph* master_graph, Edge& edge,
 
         v_numberOfNeighbours = master_graph->get_partition_wise_neighbors(v);
 
-        for(int i = 0; i < master_graph->numberOfPartitions; i++){
+        for(int i = 1; i < master_graph->numberOfPartitions; i++){
             
             next = (1 - (master_graph->partitionSizes[i] / master_graph->capacity)) * v_numberOfNeighbours[i];
             if(next > result){
@@ -387,6 +390,8 @@ void GraphPartitioning::ldg_dyn_partition(MasterGraph* master_graph, Edge& edge,
     u_numberOfNeighbours[v_partition] += 1;
     v_numberOfNeighbours[u_partition] += 1;
 
+    edge.src_ptn = u_partition;
+    edge.dst_ptn = v_partition;
 }
 
 

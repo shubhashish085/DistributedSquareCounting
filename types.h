@@ -24,6 +24,7 @@ const VertexID PCSR_INITIAL_SIZE = 100000;
 const int TAG_BUFFER = 1;
 const int TAG_BUFFER_SIZE = 2;
 const int TAG_COUNT = 3;
+const int BATCH_LENGTH = 100;
 
 struct GraphMetaData
 {
@@ -44,10 +45,12 @@ struct GraphMetaData
 
 struct Edge 
 {
-	static const unsigned short szAttr 	= 3;
+	static const unsigned short szAttr 	= 5;
 
 	VertexID src;
 	VertexID dst;
+	NodeID src_ptn;
+	NodeID dst_ptn;
 	bool add;
 
 	Edge(): src(INVALID_VID), dst(INVALID_VID) {}

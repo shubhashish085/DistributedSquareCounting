@@ -5,6 +5,7 @@
 #include <cmath>
 #include <vector>
 #include <map>
+#include <set>
 #include <algorithm>
 #include <sstream>
 
@@ -508,4 +509,62 @@ void Graph::loadPartitionedGraphFromFile(const std::string& vertex_partition_fil
 void Graph::printGraphMetaData() {
     std::cout << "|V|: " << vertices_count << ", |E|: " << edges_count << std::endl;
     std::cout << "Max Degree: " << max_degree << ", Max Label Frequency: " << std::endl;
+}
+
+long long Graph::count_exact_square_parallel() {
+
+    long long exact_count = 0;
+
+    #pragma omp parallel reduction(+:exact_count)
+    {
+        std::set<VertexID> intersection_set;
+
+        #pragma omp for schedule(dynamic)
+        for (VertexID u = 0; u < vertices_count; u++) {
+
+            ui u_nbr_cnt;
+            VertexID* u_nbrs = getVertexNeighbors(u, u_nbr_cnt);
+
+            for (VertexID i = 0; i < u_nbr_cnt; i++) {
+                VertexID v = u_nbrs[i];
+                if (u < v) {
+                    ui v_nbr_cnt;
+                    VertexID* v_nbrs = getVertexNeighbors(v, v_nbr_cnt);
+                    std::set<VertexID> v_nbr_set(v_nbrs, v_nbrs + v_nbr_cnt);
+
+                    for (VertexID j = 0; j < u_nbr_cnt; j++) {
+                        VertexID x = u_nbrs[j];
+                        int x_valid_idx = 0;
+                        if (v < x) {
+                            ui x_nbr_cnt;
+                            VertexID* x_nbrs = getVertexNeighbors(x, x_nbr_cnt);
+                            for(VertexID k = 0; k < x_nbr_cnt; k++){
+                                if(x_nbrs[k] < u){
+                                    x_valid_idx++;
+                                }else{
+                                    break;
+                                }
+                            }
+
+                            if(x_valid_idx == 0){
+                                break;
+                            }
+
+                            std::set<VertexID> x_nbr_set(x_nbrs, x_nbrs + x_valid_idx);
+
+                            intersection_set.clear();
+
+                            std::set_intersection(v_nbr_set.begin(), v_nbr_set.end(), x_nbr_set.begin(), x_nbr_set.end(),
+                                std::inserter(intersection_set, intersection_set.begin())
+                            );
+
+                            exact_count += intersection_set.size();
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    return exact_count;
 }

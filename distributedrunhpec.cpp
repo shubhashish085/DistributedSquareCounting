@@ -109,7 +109,8 @@ void run_exp_hpec_graph(const char *input, const char *outPath, DistributionCoor
         double workerCompCostMax = 0;
         double workerCompCostSum = 0;
 
-        long long globalCnt = run_mpi_for_dynamic_network(input, hIO, workerNum, bufLen, srcCompCost, workerCompCostMax, workerCompCostSum);
+        long long globalCnt = 0;
+        run_mpi_for_dynamic_network(input, hIO, workerNum, bufLen, srcCompCost, workerCompCostMax, workerCompCostSum);
 
         gettimeofday(&endTV, NULL);
 
