@@ -54,6 +54,7 @@ public:
     void loadDBPartitionedGraphFromFile(const std::string& file_path, VertexID minVertexID, VertexID maxVertexID);
     void transformToAugmentedGraph(Graph* data_graph, Graph* augmented_graph);
     void printGraphMetaData();
+    long long count_exact_square();
     long long count_exact_square_parallel();
 
     const ui* getOffsets() const {

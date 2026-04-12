@@ -24,7 +24,8 @@ const VertexID PCSR_INITIAL_SIZE = 100000;
 const int TAG_BUFFER = 1;
 const int TAG_BUFFER_SIZE = 2;
 const int TAG_COUNT = 3;
-const int BATCH_LENGTH = 100;
+const int BATCH_LENGTH = 150;
+const ui GRAPH_CAPACITY = 20000;
 
 struct GraphMetaData
 {
@@ -55,7 +56,8 @@ struct Edge
 
 	Edge(): src(INVALID_VID), dst(INVALID_VID) {}
 	Edge(VertexID iSrc, VertexID iDst): src(iSrc), dst(iDst) {}
-    Edge(const Edge &iEdge): src(iEdge.src), dst(iEdge.dst) {}
+    Edge(const Edge &iEdge): src(iEdge.src), dst(iEdge.dst), src_ptn(iEdge.src_ptn), dst_ptn(iEdge.dst_ptn), add(iEdge.add) {}
+
 	
     inline bool operator==(const Edge& iEdge) const 
 	{

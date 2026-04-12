@@ -457,6 +457,7 @@ long long CountingAlgorithm::dist_comm_cost_analysis(PCSR *graph, std::vector<Ed
         graph->vertex_ptn_map[batched_edges[i].src] = batched_edges[i].src_ptn;
         graph->vertex_ptn_map[batched_edges[i].dst] = batched_edges[i].dst_ptn;
 
+        //std::cout << "In partition - " << batched_edges[i].src_ptn << std::endl;
 
         if(graph->vertex_ptn_map[batched_edges[i].src] == rank){
 

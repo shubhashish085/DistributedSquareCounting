@@ -15,8 +15,11 @@ DistributionCoordinator::DistributionCoordinator(int &argc, char** &argv)//, bit
 	MPI_Comm_size(MPI_COMM_WORLD, &szProc);
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
+	std::cout << "Size Process : " << szProc << std::endl;
+	std::cout << "Rank : " << rank << std::endl;
+
 	// Initialize and Register struct EDGE, ELEMCNT information
-	int          lenAttr[Edge::szAttr] = {1, 1};
+	int          lenAttr[Edge::szAttr] = {1, 1, 1, 1, 1};
 	MPI_Datatype arrType[Edge::szAttr] = {MPI_UNSIGNED, MPI_UNSIGNED, MPI_SHORT, MPI_SHORT, MPI_CXX_BOOL};
 
 	MPI_Aint     offsets[Edge::szAttr];
@@ -28,25 +31,25 @@ DistributionCoordinator::DistributionCoordinator(int &argc, char** &argv)//, bit
 	MPI_Type_create_struct(Edge::szAttr, lenAttr, offsets, arrType, &MPI_TYPE_EDGE);
 	MPI_Type_commit(&MPI_TYPE_EDGE);
 
-	arrType[0] = MPI_UNSIGNED;
+	/*arrType[0] = MPI_UNSIGNED;
 	arrType[1] = MPI_DOUBLE;
 	offsets[0] = offsetof(WedgeCnt, first_vtx);
     offsets[1] = offsetof(WedgeCnt, third_vtx);
 	offsets[2] = offsetof(WedgeCnt, cnt);
 	MPI_Type_create_struct(WedgeCnt::szAttr, lenAttr, offsets, arrType, &MPI_TYPE_WEDGE_CNT);
-	MPI_Type_commit(&MPI_TYPE_WEDGE_CNT);
+	MPI_Type_commit(&MPI_TYPE_WEDGE_CNT);*/
 }
 
 // Initialize requests and buffers
-void DistributionCoordinator::init(int lenBuf, int workerNum)
+void DistributionCoordinator::init(int ilenBuf, int iworkerNum)
 {
 	commCostDistribute = 0;
     commCostGather = 0;
     ioCPUTime = 0;
 
     eBuf.clear();
-    DistributionCoordinator::lenBuf = lenBuf;
-    DistributionCoordinator::workerNum = workerNum;
+    lenBuf = ilenBuf;
+    workerNum = iworkerNum;
 
     if (rank == MPI_MASTER)
     {
@@ -61,6 +64,8 @@ void DistributionCoordinator::init(int lenBuf, int workerNum)
         eBuf.resize(1);
         eBuf[0].init(getWorkerId());
     }
+
+	//std::cout << "Distribution Coordinator Initialization Done !" << std::endl;
 }
 
 
@@ -111,25 +116,97 @@ bool DistributionCoordinator::bCastPartitionLimit(ui*& partition_limit, int& wor
     return true;
 }
 
+bool DistributionCoordinator::IrecvEdge_blocking(Edge * buf, std::vector<Edge>& batched_edges, ui& i)
+{
+	
+	MPI_Status status;
+
+	//std::cout << "LenBuf : " << lenBuf << std::endl;
+
+	MPI_Recv(buf, lenBuf, MPI_TYPE_EDGE, MPI_MASTER, TAG_STREAM, MPI_COMM_WORLD, &status);
+
+	i = 0;
+
+	// for(ui idx = 0; idx < count; idx++){
+	// 	std::cout << "Data : idx - " << idx << "-------" << buf[idx].src << " --- " << buf[idx].dst << std::endl;
+	// }
+
+	while(buf[i].src != INVALID_VID && buf[i].dst != INVALID_VID && i < lenBuf){
+		//std::cout << "Data : idx - " <<  buf[i].src_ptn << " --- " << buf[i].dst_ptn << std::endl;
+		batched_edges.push_back(buf[i]);
+		i++;
+	}
+
+	//std::cout << "Length of Valid data :  " << i << std::endl;
+
+	return true;
+	//waitIOCompletion(iReq);
+}
+
 bool DistributionCoordinator::IrecvEdge(Edge *buf, MPI_Request &iReq)
 {
+	//int recv_status = MPI_Irecv(buf, lenBuf, MPI_TYPE_EDGE, MPI_MASTER, TAG_STREAM, MPI_COMM_WORLD, &iReq);
+	/*int recv_status = MPI_Recv(buf, lenBuf, MPI_TYPE_EDGE, MPI_MASTER, TAG_STREAM, MPI_COMM_WORLD);*/
+
 	return (MPI_SUCCESS == MPI_Irecv(buf, lenBuf, MPI_TYPE_EDGE, MPI_MASTER, TAG_STREAM, MPI_COMM_WORLD, &iReq));
 	//waitIOCompletion(iReq);
 }
 
-bool DistributionCoordinator::IsendEdge(Edge *buf, int mid, MPI_Request &iReq){
-	MPI_Isend(buf, lenBuf, MPI_TYPE_EDGE, mid + 1, TAG_STREAM, MPI_COMM_WORLD, &iReq);
+bool DistributionCoordinator::IsendEdge_blocking(Edge *& buf, int mid, int length){
+	//MPI_Isend(buf, lenBuf, MPI_TYPE_EDGE, mid + 1, TAG_STREAM, MPI_COMM_WORLD, &iReq);
+	//MPI_Isend(buf, length, MPI_TYPE_EDGE, mid, TAG_STREAM, MPI_COMM_WORLD, &iReq);
+
+	//std::cout << "Send  to Rank : " << buf[11].src << " ----------- " << buf[11].dst << std::endl;
+
+	ui i = 0;
+
+	/*while(buf[i].src != INVALID_VID && buf[i].dst != INVALID_VID && i < length){
+		std::cout << "Data : i - " <<  buf[i].src_ptn << " --- " << buf[i].dst_ptn << std::endl;
+		i++;
+	}
+
+	std::cout << "----------- Length of Send Side : " << i << std::endl;*/
+
+	MPI_Send(buf, length, MPI_TYPE_EDGE, mid, TAG_STREAM, MPI_COMM_WORLD);
+	//std::cout << " -------------------------- Sent to : " << mid << std::endl;
 	return true;
 }
 
-bool DistributionCoordinator::sendEdge(const Edge &iEdge, NodeID dst)
+bool DistributionCoordinator::IsendEdge(Edge *buf, int mid, int length, MPI_Request &iReq){
+	//MPI_Isend(buf, lenBuf, MPI_TYPE_EDGE, mid + 1, TAG_STREAM, MPI_COMM_WORLD, &iReq);
+	//MPI_Isend(buf, length, MPI_TYPE_EDGE, mid, TAG_STREAM, MPI_COMM_WORLD, &iReq);
+	MPI_Isend(buf, length, MPI_TYPE_EDGE, mid, TAG_STREAM, MPI_COMM_WORLD, &iReq);
+	//std::cout << " -------------------------- Sent to : " << mid << std::endl;
+	return true;
+}
+
+bool DistributionCoordinator::sendEdge(Edge &iEdge, NodeID dst)
 {
 	Edge tmpEdge = iEdge;
 	commCostDistribute++;
-	eBuf[dst].putNext(tmpEdge);
+
+	//std::cout << "Destination : " << dst << " qit : " << eBuf[0].qit << std::endl;
+
+	eBuf[dst].putNext_blocking(tmpEdge);
+
+	//std::cout << "Send Edge Finished" << std::endl;
 
 	return true;
 }
+
+bool DistributionCoordinator::recvEdge_blocking(Edge &oEdge, std::vector<Edge>& edges, ui& length)
+{
+	IrecvEdge_blocking(eBuf[0].buf[0], edges, length);
+
+	/*eBuf[0].getNext_blocking(oEdge, edges);
+	if (oEdge == END_STREAM)
+	{
+		eBuf[0].cleanup();
+	}*/
+	//return (oEdge != END_STREAM);
+	return true;
+}
+
 
 bool DistributionCoordinator::recvEdge(Edge &oEdge)
 {
@@ -148,6 +225,17 @@ bool DistributionCoordinator::sendEndSignal()
 	{
 		eBuf[mit].putNext(signal);
 		eBuf[mit].flushSend();
+	}
+	return true;
+}
+
+bool DistributionCoordinator::sendEndSignal_blocking()
+{
+	Edge signal(END_STREAM);
+	for (int mit = 0; mit < workerNum; mit++)
+	{
+		eBuf[mit].putNext_blocking(signal);
+		eBuf[mit].flushSend_blocking();
 	}
 	return true;
 }

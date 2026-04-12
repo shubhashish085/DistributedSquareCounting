@@ -85,10 +85,12 @@ void run_mpi_for_dynamic_network(std::string filename, DistributionCoordinator &
     // Sourcce init
     if (hIO.isMaster())
     {
-        master_graph = new MasterGraph();
+        master_graph = new MasterGraph(workerNum, GRAPH_CAPACITY, GRAPH_CAPACITY);
 
         Edge edge;
         std::ifstream infile(filename);
+
+        std::cout << "In Master - Rank : " << hIO.getRank() << std::endl;
 
         if (!infile.is_open())
         {
@@ -100,10 +102,26 @@ void run_mpi_for_dynamic_network(std::string filename, DistributionCoordinator &
         std::string addition;
         NodeID u_partition, v_partition;
 
+        ui line_count = 0, comment_line_count = 4;
+        std::string input_line;
+
+        while (std::getline(infile, input_line)) {
+            line_count++;
+            if(line_count >= comment_line_count){
+                break;
+            }
+        }
+
+        std::cout << "Reading for master graph " << std::endl;
+
         while (infile >> begin) // Stream edges
         {
             infile >> end;
             //infile >> addition;
+
+            if(begin > (GRAPH_CAPACITY - 2) || end >  (GRAPH_CAPACITY - 2) || (begin == end)){
+                continue;
+            }
 
             edge.src = begin;
             edge.dst = end;
@@ -118,10 +136,13 @@ void run_mpi_for_dynamic_network(std::string filename, DistributionCoordinator &
                 edge.add = true;
             }*/
 
-            //GraphPartitioning::hash_dyn_partition(master_graph, edge, u_partition, v_partition);
-             GraphPartitioning::ldg_dyn_partition(master_graph, edge, u_partition, v_partition);
+            //std::cout << "Partitioning Started" << hIO.getRank() << std::endl;
+            GraphPartitioning::hash_dyn_partition(master_graph, edge, u_partition, v_partition);
+            //GraphPartitioning::ldg_dyn_partition(master_graph, edge, u_partition, v_partition);
             // GraphPartitioning::fennel_dyn_partition(master_graph, edge, u_partition, v_partition);
-            
+
+
+            //std::cout << "U partition : " << edge.src_ptn << " V partition : " << edge.dst_ptn << std::endl;
 
             if (u_partition == v_partition)
             {
@@ -134,7 +155,7 @@ void run_mpi_for_dynamic_network(std::string filename, DistributionCoordinator &
             }
         }
 
-        hIO.sendEndSignal();
+        hIO.sendEndSignal_blocking();
 
         long long globalCnt = 0;
 
@@ -155,36 +176,64 @@ void run_mpi_for_dynamic_network(std::string filename, DistributionCoordinator &
         Edge edge;
         std::vector<Edge> batched_edges;
 
-        ui batch_counter = 0;
+        ui edge_counter = 0;
         long long comm_cost = 0, prev_wedge_map_size = 0;
 
-        while (hIO.recvEdge(edge))
+        while (true)
         {
-            if(edge.src == INVALID_VID || edge.dst == INVALID_VID){
-                comm_cost += CountingAlgorithm::dist_comm_cost_analysis(graph, batched_edges, hIO.getRank());
-                break;
-            }
+            /*for(ui idx = 0; idx < hIO.eBuf[0].bit; idx++){
+                batched_edges.push_back(hIO.eBuf[0].buf[]);
+            }*/
+            bool last = false;
+            ui length = 0;
 
-            if (edge.add)
-            {
-                batched_edges.push_back(edge);
-            }
+            hIO.recvEdge_blocking(edge,batched_edges, length);
+            
+
+            /*for(ui i = 0; i < lenBuf; i++){
+                if(batched_edges[i].src == INVALID_VID && batched_edges[i].dst == INVALID_VID){
+                   last = true; 
+                }
+            }*/
+
+            //std::cout << "Edge : " << batched_edges[0].src << " ------ "<< batched_edges[0].dst << std::endl; 
+
+            /*if(batched_edges[length - 1].src == INVALID_VID || batched_edges[length - 1].dst == INVALID_VID){
+                //batched_edges.pop_back();
+                //comm_cost += CountingAlgorithm::dist_comm_cost_analysis(graph, batched_edges, hIO.getRank());
+                break;
+            }*/
+
+            edge_counter += batched_edges.size();
+
+
+            comm_cost += CountingAlgorithm::dist_comm_cost_analysis(graph, batched_edges, hIO.getRank());
+            //std::cout << "Communication Cost : " << comm_cost << std::endl;
+            
+
+            //batched_edges.clear();             
+            // if (edge.add)
+            // {
+            //     batched_edges.push_back(edge);
+            // }
             /*else
             {
                 graph->delete_edge(edge.src, edge.dst);
             }*/
 
-            batch_counter++;
+           if(length < lenBuf){
 
-            if(batch_counter == BATCH_LENGTH){
+                std::cout << "Last Set Done ! Edge Count From Partition " << hIO.getRank() << " : " << edge_counter << std::endl;
+                break;
+           }
 
-                comm_cost += CountingAlgorithm::dist_comm_cost_analysis(graph, batched_edges, hIO.getRank());
-                batch_counter = 0;
-            }
+           length = 0;
 
         }
 
-        std::cout << "Partition " << hIO.getRank() << " : Communication Cost - " << comm_cost << std::endl;
+        std::cout << "Partition : " << hIO.getRank() << " : Communication Cost - " << comm_cost << std::endl;
+
+        std::cout << "======================================================================================" << std::endl;
 
         // send counts to master
         /*CountingAlgorithm::distributed_dynamic_count_square(graph);
@@ -273,6 +322,8 @@ void run_exp_dynamic_network(std::string input, std::string outPath, Distributio
     double srcCompCost = 0;
     double workerCompCostMax = 0;
     double workerCompCostSum = 0;
+
+    std::cout << "Before running dynamic network" << std::endl;
 
     run_mpi_for_dynamic_network(input, hIO, workerNum, bufLen, srcCompCost, workerCompCostMax, workerCompCostSum);
 

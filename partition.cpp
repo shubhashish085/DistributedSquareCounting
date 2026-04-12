@@ -269,11 +269,17 @@ void GraphPartitioning::hash_dyn_partition(MasterGraph* master_graph, Edge& edge
     VertexID u = edge.src;
     VertexID v = edge.dst;
 
+    //std::cout << "Partitioning Started" << std::endl;
+
     ui* u_numberOfNeighbours = master_graph->get_partition_wise_neighbors(u);
+
+    //std::cout << "--------------- " << u_numberOfNeighbours[0];
 
     int argmax = -1;    
 
     argmax = hash_vertex(u, master_graph->numberOfPartitions);
+
+    //std::cout << "Hash Done" << std::endl;
 
     for(int i = 1 ; i < master_graph->numberOfPartitions ; i++) {
         master_graph->numberOfEdges += u_numberOfNeighbours[i];
@@ -284,11 +290,15 @@ void GraphPartitioning::hash_dyn_partition(MasterGraph* master_graph, Edge& edge
 
     u_partition = argmax;
 
+    //std::cout << "U partition : " << u_partition << std::endl;
+
     ui* v_numberOfNeighbours = master_graph->get_partition_wise_neighbors(v);
 
     argmax = -1;    
 
     argmax = hash_vertex(v, master_graph->numberOfPartitions);
+
+    //std::cout << "Hash Done" << std::endl;
 
     for(int i = 1 ; i < master_graph->numberOfPartitions ; i++) {
         master_graph->numberOfEdges += v_numberOfNeighbours[i];
@@ -299,8 +309,12 @@ void GraphPartitioning::hash_dyn_partition(MasterGraph* master_graph, Edge& edge
 
     v_partition = argmax;
 
+    //std::cout << "U partition : " << u_partition << std::endl;
+
     u_numberOfNeighbours[v_partition] += 1;
     v_numberOfNeighbours[u_partition] += 1;
+
+    //std::cout << "Partition Ended" << std::endl;
 
     edge.src_ptn = u_partition;
     edge.dst_ptn = v_partition;
@@ -324,6 +338,8 @@ void GraphPartitioning::ldg_dyn_partition(MasterGraph* master_graph, Edge& edge,
 
     u_partition = master_graph->vertex_node_map[u];
     v_partition = master_graph->vertex_node_map[v];
+
+    //std::cout << "Finding u partition" << std::endl;
 
     if(u_partition == -1){
 
@@ -355,13 +371,19 @@ void GraphPartitioning::ldg_dyn_partition(MasterGraph* master_graph, Edge& edge,
 
     tie_breaker.clear();
 
+    //std::cout << "Finished u partition : " << u_partition << std::endl;
+
+    result = -1;
+
+    //std::cout << "Finding v partition : " << v << std::endl;
+
     if(v_partition == -1){
 
         v_numberOfNeighbours = master_graph->get_partition_wise_neighbors(v);
 
         for(int i = 1; i < master_graph->numberOfPartitions; i++){
             
-            next = (1 - (master_graph->partitionSizes[i] / master_graph->capacity)) * v_numberOfNeighbours[i];
+            next = (1.0 - (double)(master_graph->partitionSizes[i] / master_graph->capacity)) * v_numberOfNeighbours[i];
             if(next > result){
                 if(master_graph->partitionSizes[i] < master_graph->capacity){
                     result = next;
@@ -382,6 +404,8 @@ void GraphPartitioning::ldg_dyn_partition(MasterGraph* master_graph, Edge& edge,
 
         master_graph->partitionSizes[v_partition] += 1;
     }
+
+    //std::cout << "Finished v partition : " << v_partition << std::endl;
 
     if(u_partition != v_partition){
         master_graph->numberOfEdgecut += 1;

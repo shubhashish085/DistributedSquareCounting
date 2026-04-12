@@ -40,6 +40,38 @@ public:
 
     }
 
+    MasterGraph(int worker_num, ui i_capacity, ui i_size_of_graph){
+        
+        vertices_count = 0;
+        edges_count = 0;
+        max_degree = 0;
+        capacity = i_capacity;
+        size_of_graph = i_size_of_graph;
+
+        vertex_node_map = new NodeID[capacity];
+
+        for(ui i = 0; i < capacity; i++){
+            vertex_node_map[i] = -1;
+        }
+
+        numberOfPartitions = worker_num;
+        partitionSizes = new ui[worker_num];
+
+        for(ui i = 0; i < numberOfPartitions; i++){
+            partitionSizes[i] = 0;
+        }
+        
+        partition_wise_neighbors = new ui*[size_of_graph];
+        for(ui i = 0; i < size_of_graph; i++){
+            partition_wise_neighbors[i] = new ui[worker_num];
+            for(ui j = 0; j < worker_num;j++){
+                partition_wise_neighbors[i][j] = 0;
+            }
+        }
+
+        std::cout << "Initialization Done " << std::endl;
+    }
+
     ~MasterGraph() {
         
     }

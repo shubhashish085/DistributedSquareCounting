@@ -49,10 +49,60 @@ public:
 
             inline bool init(NodeID iMid)
             {
+                bit = 0;
+                qit = 0;
+                req[0] = MPI_REQUEST_NULL;
+                req[1] = MPI_REQUEST_NULL;
                 mid = iMid;
                 buf[0] = new Edge[lenBuf];
                 buf[1] = new Edge[lenBuf];
+
+                //std::cout << "Edge Container Initialization Done " <<std::endl;
+                
                 return true;
+            }
+
+            inline void getNext_blocking(Edge &oEdge, std::vector<Edge>& edges, ui& length){
+
+                /*if (isEmpty)
+                {
+                    clock_t begin = clock();
+
+                    DistributionCoordinator::IrecvEdge_blocking(buf[qit], edges);                  
+                    bit = 0;
+
+                    ioCPUTime += double(clock() - begin);
+
+                    isEmpty = false;
+                } else*/ 
+                /*if (bit == lenBuf)
+                {
+                    clock_t begin = clock();
+
+                    std::cout << "LenBuf : " << lenBuf << std::endl;                    
+                    DistributionCoordinator::IrecvEdge_blocking(buf[qit], edges);
+                    /*qit = (qit + 1) % 2;
+                    waitIOCompletion(req[qit]);
+                    bit = 0;
+
+                    ioCPUTime += double(clock() - begin);
+                }*/
+
+                clock_t begin = clock();
+
+                                    
+                DistributionCoordinator::IrecvEdge_blocking(buf[qit], edges, length);
+                /*qit = (qit + 1) % 2;
+                waitIOCompletion(req[qit]);*/
+                bit = 0;
+
+                ioCPUTime += double(clock() - begin);
+
+                if(edges.size() > 0){
+                    oEdge = edges[edges.size() - 1];
+                }                
+
+                return;
             }
 
             // Methods for receiver
@@ -112,11 +162,37 @@ public:
                 if (bit == lenBuf)
                 {
                     clock_t begin = clock();
-
+                
+                    int length = bit;
                     bit = 0;
-                    DistributionCoordinator::IsendEdge(buf[qit], mid, req[qit]);
+                    
+                    //std::cout << "Isending to Rank : " << mid << std::endl;
+                    DistributionCoordinator::IsendEdge(buf[qit], mid, length, req[qit]);
                     qit = (qit + 1) % 2;
                     waitIOCompletion(req[qit]);
+
+                    ioCPUTime += double(clock() - begin);
+                }
+
+                return true;
+            }
+
+            inline bool putNext_blocking(Edge &iEdge)
+            {
+
+                buf[qit][bit++] = iEdge;
+                if (bit == lenBuf)
+                {
+                    clock_t begin = clock();
+                
+                    int length = bit;
+                    
+                    
+                    //std::cout << "Isending to Rank : " << mid << std::endl;
+                    DistributionCoordinator::IsendEdge_blocking(buf[qit], mid, length);
+                    //qit = (qit + 1) % 2;
+                    bit = 0;
+                    //waitIOCompletion(req[qit]);
 
                     ioCPUTime += double(clock() - begin);
                 }
@@ -131,13 +207,37 @@ public:
 
                 if (bit != 0)
                 {
-                    DistributionCoordinator::IsendEdge(buf[qit], mid, req[qit]);
+                    int length = bit;
+                    DistributionCoordinator::IsendEdge(buf[qit], mid, length, req[qit]);
                 }
+
+                bit = 0;
 
                 for (int i = 0; i < 2; i++)
                 {
                     waitIOCompletion(req[i]);
                 }
+
+                ioCPUTime += double(clock() - begin);
+            }
+
+            void flushSend_blocking()
+            {
+
+                clock_t begin = clock();
+
+                if (bit != 0)
+                {
+                    int length = bit;
+                    DistributionCoordinator::IsendEdge_blocking(buf[qit], mid, length);
+                }
+
+                bit = 0;
+
+                /*for (int i = 0; i < 2; i++)
+                {
+                    waitIOCompletion(req[i]);
+                }*/
 
                 ioCPUTime += double(clock() - begin);
             }
@@ -152,7 +252,9 @@ public:
 	static unsigned short	lenBuf;
 
     static bool IrecvEdge(Edge *buf, MPI_Request &iReq);
-	static bool IsendEdge(Edge *buf, int dst, MPI_Request &iReq);
+	static bool IsendEdge(Edge *buf, int dst, int length, MPI_Request &iReq);
+    static bool IrecvEdge_blocking(Edge *buf, std::vector<Edge>& edges, ui& length);
+	static bool IsendEdge_blocking(Edge *& buf, int dst, int length);
 	
 	MPI_Request				req;
 	int 					rank;
@@ -191,10 +293,11 @@ public:
 	long getCommCostGather();
 
 	// Edge
-	bool sendEdge(const Edge &iEdge, NodeID dst);
+	bool sendEdge(Edge &iEdge, NodeID dst);
 	bool bCastEdge(Edge& iEdge);
     bool bCastPartitionLimit(ui*& partition_limit, int& workernum);
 	bool recvEdge(Edge &oEdge);
+    bool recvEdge_blocking(Edge &oEdge, std::vector<Edge>& edges, ui& length);
 
 	// Receiving data
 	bool sendWedgeCnt(std::map<std::pair<VertexID, VertexID>, ui>& wedge_map);
@@ -212,6 +315,7 @@ public:
 
 	// Control flow
 	bool sendEndSignal();
+    bool sendEndSignal_blocking();
 
 	// Get variable
 	int getRank(){
