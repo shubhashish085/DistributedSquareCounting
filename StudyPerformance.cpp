@@ -56,7 +56,7 @@
     //std::cout << "Naive Communication Cost : " << comm_cost << std::endl;
 }*/
 
-int main(int argc, char** argv){
+/*int main(int argc, char** argv){
 
     long long wedge_count = 0;
     long long square_count = 0;
@@ -79,8 +79,23 @@ int main(int argc, char** argv){
 
     std::cout << "==================================================" << std::endl;
 
-}
+}*/
 
+
+
+
+int main(int argc, char** argv){
+
+    std::string input_data_graph_file = argv[1];
+    std::string vertex_partition_file = argv[2];
+    std::cout << "Input Graph File : " << input_data_graph_file << std::endl;
+    std::cout << "Vertex Partition File : " << vertex_partition_file << std::endl;
+
+    CountingAlgorithm::dist_opt_count_square_in_partitioned_graph(input_data_graph_file, vertex_partition_file);   
+
+    std::cout << "==================================================" << std::endl;
+
+}
 
 
 

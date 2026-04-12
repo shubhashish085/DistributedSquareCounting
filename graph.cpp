@@ -370,6 +370,8 @@ void Graph::loadPartitionedGraphFromFile(const std::string &vertex_partition_fil
         partition[vertex_id] = partition_id;
     }
 
+    vtx_ptn_file.close();
+
     degrees = new ui[vertices_count];
     ghost_vertices_count = 0;
     std::fill(degrees, degrees + vertices_count, 0);
@@ -403,36 +405,26 @@ void Graph::loadPartitionedGraphFromFile(const std::string &vertex_partition_fil
 
         infile >> end;
 
-        if (begin != end && begin < vertices_count && end < vertices_count)
+        if (begin != end && begin < total_vertices_count && end < total_vertices_count)
         {
-
-            if (partition[begin] != partition_no && partition[end] == partition_no)
-            {
+            if (partition[begin] != partition_no && partition[end] == partition_no){
 
                 ghost_edges_count++;
 
-                if (ghost_vertex_map.find(begin) != ghost_vertex_map.end())
-                {
+                if (ghost_vertex_map.find(begin) != ghost_vertex_map.end()) {
                     ghost_vertex_map[begin] += 1;
-                }
-                else
-                {
+                } else {
                     ghost_vertex_map[begin] = 1;
                     ghost_vertices_count += 1;
                 }
-            }
-
-            if (partition[begin] == partition_no && partition[end] != partition_no)
-            {
+            } else if (partition[begin] == partition_no && partition[end] != partition_no){
 
                 ghost_edges_count++;
 
-                if (ghost_vertex_map.find(end) != ghost_vertex_map.end())
-                {
+                if (ghost_vertex_map.find(end) != ghost_vertex_map.end()) {
                     ghost_vertex_map[end] += 1;
                 }
-                else
-                {
+                else{
                     ghost_vertex_map[end] = 1;
                     ghost_vertices_count += 1;
                 }
@@ -454,6 +446,8 @@ void Graph::loadPartitionedGraphFromFile(const std::string &vertex_partition_fil
             {
                 edges_count++;
             }
+
+            contains_in_partition = false;
         }
     }
 
@@ -474,16 +468,15 @@ void Graph::loadPartitionedGraphFromFile(const std::string &vertex_partition_fil
     std::vector<ui> g_neighbors_offset(ghost_vertices_count, 0);
     VertexID id;
 
-    for (VertexID i = 0; i < vertices_count; i++)
-    {
-        id = vertices[i];
-        offsets[id + 1] = offsets[id] + degrees[id];
+    for (VertexID i = 0; i < vertices_count; i++){
+        /*id = vertices[i];
+        offsets[id + 1] = offsets[id] + degrees[id];*/
+        offsets[i + 1] = offsets[i] + degrees[i];
     }
 
     VertexID i = 0;
     for (const auto &[key, value] : ghost_vertex_map)
     {
-
         ghost_vertex_idx_map[key] = i;
         g_offsets[i + 1] = g_offsets[i] + value;
         i++;
@@ -502,50 +495,39 @@ void Graph::loadPartitionedGraphFromFile(const std::string &vertex_partition_fil
 
     VertexID ghost_idx;
     ui g_offset;
+    ui begin_idx, end_idx;
 
     while (input_file >> begin)
     {
-
         input_file >> end;
 
-        if (vertex_idx_map.find(begin) != vertex_idx_map.end())
-        {
-            begin = vertex_idx_map[begin];
-        }
-        if (vertex_idx_map.find(end) != vertex_idx_map.end())
-        {
-            end = vertex_idx_map[end];
-        }
-
-        if (begin == end)
-        {
+        if((begin == end) || (begin >= total_vertices_count) || (end >= total_vertices_count)){
             continue;
         }
 
-        if (vertex_idx_map.find(begin) != vertex_idx_map.end())
-        {
-            offset = offsets[begin] + neighbors_offset[begin];
+
+        if (vertex_idx_map.find(begin) != vertex_idx_map.end()){
+            begin_idx = vertex_idx_map[begin];
+            offset = offsets[begin_idx] + neighbors_offset[begin_idx];
             neighbors[offset] = end;
             neighbors_offset[begin] += 1;
         }
 
-        if (vertex_idx_map.find(end) != vertex_idx_map.end())
-        {
-            offset = offsets[end] + neighbors_offset[end];
+        if (vertex_idx_map.find(end) != vertex_idx_map.end()){
+            end_idx = vertex_idx_map[end];
+            offset = offsets[end_idx] + neighbors_offset[end_idx];
             neighbors[offset] = begin;
             neighbors_offset[end] += 1;
         }
 
-        if (partition[begin] != partition_no && partition[end] == partition_no)
-        {
+        if (partition[begin] != partition_no && partition[end] == partition_no){
             ghost_idx = ghost_vertex_idx_map[begin];
             g_offset = g_offsets[ghost_idx] + g_neighbors_offset[ghost_idx];
             g_neighbors[g_offset] = end;
             g_neighbors_offset[ghost_idx] += 1;
         }
 
-        if (partition[begin] == partition_no && partition[end] != partition_no)
-        {
+        if (partition[begin] == partition_no && partition[end] != partition_no){
             ghost_idx = ghost_vertex_idx_map[end];
             g_offset = g_offsets[ghost_idx] + g_neighbors_offset[ghost_idx];
             g_neighbors[g_offset] = begin;

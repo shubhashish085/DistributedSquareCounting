@@ -15,11 +15,9 @@ DistributionCoordinator::DistributionCoordinator(int &argc, char** &argv)//, bit
 	MPI_Comm_size(MPI_COMM_WORLD, &szProc);
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
-	std::cout << "Size Process : " << szProc << std::endl;
-	std::cout << "Rank : " << rank << std::endl;
 
 	// Initialize and Register struct EDGE, ELEMCNT information
-	int          lenAttr[Edge::szAttr] = {1, 1, 1, 1, 1};
+	/*int          lenAttr[Edge::szAttr] = {1, 1, 1, 1, 1};
 	MPI_Datatype arrType[Edge::szAttr] = {MPI_UNSIGNED, MPI_UNSIGNED, MPI_SHORT, MPI_SHORT, MPI_CXX_BOOL};
 
 	MPI_Aint     offsets[Edge::szAttr];
@@ -29,15 +27,17 @@ DistributionCoordinator::DistributionCoordinator(int &argc, char** &argv)//, bit
 	offsets[3] = offsetof(Edge, dst_ptn);
 	offsets[4] = offsetof(Edge, add);
 	MPI_Type_create_struct(Edge::szAttr, lenAttr, offsets, arrType, &MPI_TYPE_EDGE);
-	MPI_Type_commit(&MPI_TYPE_EDGE);
+	MPI_Type_commit(&MPI_TYPE_EDGE);*/
 
-	/*arrType[0] = MPI_UNSIGNED;
-	arrType[1] = MPI_DOUBLE;
-	offsets[0] = offsetof(WedgeCnt, first_vtx);
-    offsets[1] = offsetof(WedgeCnt, third_vtx);
-	offsets[2] = offsetof(WedgeCnt, cnt);
-	MPI_Type_create_struct(WedgeCnt::szAttr, lenAttr, offsets, arrType, &MPI_TYPE_WEDGE_CNT);
-	MPI_Type_commit(&MPI_TYPE_WEDGE_CNT);*/
+	int          lenAttr1[WedgeCnt::szAttr] = {1, 1, 1};
+	MPI_Datatype arrType1[WedgeCnt::szAttr] = {MPI_UNSIGNED, MPI_UNSIGNED, MPI_SHORT};
+
+	MPI_Aint     offsets1[WedgeCnt::szAttr];
+	offsets1[0] = offsetof(WedgeCnt, first_vtx);
+    offsets1[1] = offsetof(WedgeCnt, third_vtx);
+	offsets1[2] = offsetof(WedgeCnt, cnt);
+	MPI_Type_create_struct(WedgeCnt::szAttr, lenAttr1, offsets1, arrType1, &MPI_TYPE_WEDGE_CNT);
+	MPI_Type_commit(&MPI_TYPE_WEDGE_CNT);
 }
 
 // Initialize requests and buffers

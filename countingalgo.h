@@ -17,7 +17,7 @@ public:
 
     static void distributed_count_square(Graph* graph);
     static void distributed_count_square_in_partitioned_graph(const std::string& vertex_partition_file_path, const std::string& file_path, int partition_no);
-    static void dist_opt_count_square_in_partitioned_graph(const std::string& vertex_partition_file_path, const std::string& file_path, int partition_no);
+    static void dist_opt_count_square_in_partitioned_graph(const std::string& file_path, const std::string& vertex_partition_file_path);
 
     static long long aggregate_square_count(std::map<std::pair<VertexID, VertexID>, ui>& wedge_map, long long&  global_cnt);
 
@@ -26,10 +26,6 @@ public:
     static long long communication_cost_analysis(const std::string& vertex_partition_file_path, const std::string& file_path, int partition_no);
     static long long naive_comm_cost_analysis(Graph* graph, const std::string& vertex_partition_file_path, int partition_no);
     static long long dist_comm_cost_analysis(PCSR* graph, std::vector<Edge> batched_edges, int rank);
-
-    /*static void count_pq_square(HpecWorkerGraph* graph);
-    static void count_qr_square(HpecWorkerGraph* graph);
-    static void count_pr_square(HpecWorkerGraph* graph);*/
 };
 
 

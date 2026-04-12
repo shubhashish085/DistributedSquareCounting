@@ -57,7 +57,6 @@ double run_mpi_for_static_network(const char *filename, DistributionCoordinator 
         else
         {
             minVertexID = partition_limit[rank - 2];
-            ;
             maxVertexID = partition_limit[rank - 1];
         }
 

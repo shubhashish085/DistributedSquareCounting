@@ -123,6 +123,8 @@ void CountingAlgorithm::distributed_count_square_in_partitioned_graph(const std:
                 {
                     wedge_map[search_pair] = recv_buffer[i].cnt;
                 }
+
+                i++;
             }
         }
     }
@@ -133,17 +135,14 @@ void CountingAlgorithm::distributed_count_square_in_partitioned_graph(const std:
 
         for (ui i = 0; i < (graph->vertices).size(); i++)
         {
-            neighbors = graph->getVertexNeighbors_partitioned(graph->vertices[i], nbr_count);
+            neighbors = graph->getVertexNeighbors(i, nbr_count);
 
-            for (ui j = 0; j < nbr_count; j++)
-            {
-                for (ui k = j + 1; k < nbr_count; k++)
-                {
-
+            for (ui j = 0; j < nbr_count; j++){
+                for (ui k = j + 1; k < nbr_count; k++){
                     search_pair = get_wedge_endpoint_pair(neighbors[j], neighbors[k]);
-                    auto search = (graph->wedge_map).find(search_pair);
+                    auto search_result = (graph->wedge_map).find(search_pair);
 
-                    if (search == (graph->wedge_map).end())
+                    if (search_result == (graph->wedge_map).end())
                     {
                         graph->wedge_map[search_pair] = 1;
                     }
@@ -175,8 +174,7 @@ void CountingAlgorithm::distributed_count_square_in_partitioned_graph(const std:
     MPI_Finalize();
 }
 
-void CountingAlgorithm::dist_opt_count_square_in_partitioned_graph(const std::string &vertex_partition_file_path, const std::string &file_path, int partition_no)
-{
+void CountingAlgorithm::dist_opt_count_square_in_partitioned_graph(const std::string &file_path, const std::string &vertex_partition_file_path){
 
     VertexID *neighbors;
     ui nbr_count, wedge_count;
@@ -210,6 +208,8 @@ void CountingAlgorithm::dist_opt_count_square_in_partitioned_graph(const std::st
     {
 
         std::map<std::pair<VertexID, VertexID>, ui> wedge_map;
+
+        clock_t begin_time = clock_t();
 
         for (int rank = 1; rank < world_size; ++rank)
         {
@@ -246,16 +246,23 @@ void CountingAlgorithm::dist_opt_count_square_in_partitioned_graph(const std::st
 
         total_sq_count = total_sq_count / 2;
 
+        clock_t duration = (clock_t() - begin_time) / CLOCKS_PER_SEC;
+
+        std::cout << " Coordinator Processor : " << world_rank << " Elapsed Time : " << duration << std::endl;
+
         std::cout << " Total Square Count : " << total_sq_count << std::endl;
     }
     else
     {
         Graph *graph = new Graph();
+        NodeID ptn_idx;
         graph->loadPartitionedGraphFromFile(vertex_partition_file_path, file_path, world_rank - 1);
+
+        clock_t begin_time = clock_t();
 
         for (ui i = 0; i < (graph->vertices).size(); i++)
         {
-            neighbors = graph->getVertexNeighbors_partitioned(graph->vertices[i], nbr_count);
+            neighbors = graph->getVertexNeighbors(i, nbr_count);
 
             for (ui j = 0; j < nbr_count; j++)
             {
@@ -263,11 +270,11 @@ void CountingAlgorithm::dist_opt_count_square_in_partitioned_graph(const std::st
                 {
 
                     search_pair = get_wedge_endpoint_pair(neighbors[j], neighbors[k]);
-                    if (graph->partition[neighbors[j]] == graph->partition[neighbors[k]])
-                    {
+                    ptn_idx = graph->partition[neighbors[j]];
 
-                        auto search = (graph->wedge_map).find(search_pair);
-                        if (search == (graph->wedge_map).end())
+                    if (ptn_idx == graph->partition[neighbors[k]] && ptn_idx == (world_rank - 1)){
+                        auto search_result = (graph->wedge_map).find(search_pair);
+                        if (search_result == (graph->wedge_map).end())
                         {
                             graph->wedge_map[search_pair] = 1;
                         }
@@ -275,16 +282,11 @@ void CountingAlgorithm::dist_opt_count_square_in_partitioned_graph(const std::st
                         {
                             graph->wedge_map[search_pair] = graph->wedge_map[search_pair] + 1;
                         }
-                    }
-                    else
-                    {
-                        auto search = (graph->wedge_map_comm).find(search_pair);
-                        if (search == (graph->wedge_map_comm).end())
-                        {
+                    } else {
+                        auto search_result = (graph->wedge_map_comm).find(search_pair);
+                        if (search_result == (graph->wedge_map_comm).end()){
                             graph->wedge_map_comm[search_pair] = 1;
-                        }
-                        else
-                        {
+                        } else {
                             graph->wedge_map_comm[search_pair] = graph->wedge_map_comm[search_pair] + 1;
                         }
                     }
@@ -300,13 +302,10 @@ void CountingAlgorithm::dist_opt_count_square_in_partitioned_graph(const std::st
                 {
                     search_pair = get_wedge_endpoint_pair(graph->g_neighbors[j], graph->g_neighbors[k]);
 
-                    auto search = (graph->wedge_map).find(search_pair);
-                    if (search == (graph->wedge_map).end())
-                    {
+                    auto search_result = (graph->wedge_map).find(search_pair);
+                    if (search_result == (graph->wedge_map).end()){
                         graph->wedge_map[search_pair] = 1;
-                    }
-                    else
-                    {
+                    } else {
                         graph->wedge_map[search_pair] = graph->wedge_map[search_pair] + 1;
                     }
                 }
@@ -336,6 +335,10 @@ void CountingAlgorithm::dist_opt_count_square_in_partitioned_graph(const std::st
         MPI_Send(buffer.data(), buffer_size, MPI_TYPE_WEDGE_CNT, MPI_MASTER, TAG_BUFFER, MPI_COMM_WORLD);
 
         MPI_Send(&local_sq_count, 1, MPI_LONG_LONG, MPI_MASTER, TAG_COUNT, MPI_COMM_WORLD);
+
+        clock_t duration = (clock_t() - begin_time) / CLOCKS_PER_SEC;
+
+        std::cout << "Rank " << world_rank << " Elapsed Time : " << duration << std::endl;
     }
 
     MPI_Type_free(&MPI_TYPE_WEDGE_CNT);
@@ -651,43 +654,5 @@ long long CountingAlgorithm::aggregate_square_count(std::map<std::pair<VertexID,
         global_cnt += combinations(value, 2);
     }
 
-    return global_cnt;
+    return global_cnt / 2;
 }
-
-/*void CountingAlgorithm::count_pq_square(HpecWorkerGraph* graph){
-
-    VertexID* neighbors;
-    ui nbr_count;
-    std::pair<VertexID, VertexID> search_pair;
-
-    for(ui i = 0; i < graph->getVerticesCount(); i++){
-        neighbors = graph->getVertexNeighbors(i, nbr_count);
-
-        for(ui j = 0; j < nbr_count; j++){
-            for(ui k = j+1; k < nbr_count; k++){
-
-                search_pair = get_wedge_endpoint_pair(neighbors[j], neighbors[k]);
-                auto search = (graph->wedge_map).find(search_pair);
-
-                if(search == (graph->wedge_map).end()){
-                    graph->wedge_map[search_pair] = 1;
-                }else{
-                    graph->wedge_map[search_pair] = graph->wedge_map[search_pair] + 1;
-                }
-            }
-        }
-    }
-}
-
-void CountingAlgorithm::count_qr_square(HpecWorkerGraph* graph){
-
-
-
-
-}
-
-
-void CountingAlgorithm::count_pr_square(HpecWorkerGraph* graph){
-
-
-}*/
