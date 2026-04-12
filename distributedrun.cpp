@@ -102,8 +102,10 @@ void run_mpi_for_dynamic_network(std::string filename, DistributionCoordinator &
         std::string addition;
         NodeID u_partition, v_partition;
 
+
         ui line_count = 0, comment_line_count = 4;
         std::string input_line;
+
 
         while (std::getline(infile, input_line)) {
             line_count++;
@@ -112,7 +114,6 @@ void run_mpi_for_dynamic_network(std::string filename, DistributionCoordinator &
             }
         }
 
-        std::cout << "Reading for master graph " << std::endl;
 
         while (infile >> begin) // Stream edges
         {

@@ -56,9 +56,9 @@
     //std::cout << "Naive Communication Cost : " << comm_cost << std::endl;
 }*/
 
-/*int main(int argc, char** argv){
+int main(int argc, char** argv){
 
-    //long long wedge_count = 0;
+    long long wedge_count = 0;
     long long square_count = 0;
 
     std::string input_data_graph_file = argv[1];
@@ -67,7 +67,7 @@
     Graph* graph = new Graph();
     graph->loadGraphFromFile(input_data_graph_file);
 
-    /*for(ui i = 0; i < graph->getVerticesCount(); i++){
+    for(ui i = 0; i < graph->getVerticesCount(); i++){
         wedge_count += (graph->degrees[i] * (graph->degrees[i] - 1)) / 2;
     }
 
@@ -79,7 +79,7 @@
 
     std::cout << "==================================================" << std::endl;
 
-}*/
+}
 
 
 
