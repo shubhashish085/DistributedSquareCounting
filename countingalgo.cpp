@@ -590,7 +590,7 @@ long long CountingAlgorithm::opt_communication_cost_analysis(const std::string &
     return comm_cost;
 }
 
-long long CountingAlgorithm::dist_comm_cost_analysis(PCSR *graph, std::vector<Edge> batched_edges, int rank)
+/*long long CountingAlgorithm::dist_comm_cost_analysis(PCSR *graph, std::vector<Edge> batched_edges, int rank)
 {
     long long comm_cost = 0;
 
@@ -665,7 +665,7 @@ long long CountingAlgorithm::dist_comm_cost_analysis(PCSR *graph, std::vector<Ed
     (graph->wedge_map_comm).clear();
 
     return comm_cost;
-}
+}*/
 
 void CountingAlgorithm::distributed_count_square(Graph *graph)
 {
@@ -762,7 +762,7 @@ void CountingAlgorithm::distributed_count_square(Graph *graph)
     }
 }
 
-void CountingAlgorithm::distributed_dynamic_count_square(PCSR *graph)
+/*void CountingAlgorithm::distributed_dynamic_count_square(PCSR *graph)
 {
 
     std::vector<VertexID> neighbors;
@@ -792,7 +792,7 @@ void CountingAlgorithm::distributed_dynamic_count_square(PCSR *graph)
             }
         }
     }
-}
+}*/
 
 long long CountingAlgorithm::aggregate_square_count(std::map<std::pair<VertexID, VertexID>, ui> &wedge_map, long long &global_cnt)
 {

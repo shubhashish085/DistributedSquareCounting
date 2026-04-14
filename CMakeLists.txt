@@ -26,11 +26,7 @@ set(DISTRIBUTED_SQUARE_COUNTING_FILE_LIST
         matchingcommand.h
         matchingcommand.cpp
         partition.hpp
-        partition.cpp
-        pcsr.h
-        pcsr.cpp
-        pma.h
-        pma.cpp        
+        partition.cpp      
         StudyPerformance.cpp
         types.h)
 

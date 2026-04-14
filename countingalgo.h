@@ -3,7 +3,7 @@
 
 #include <map>
 #include "graph.h"
-#include "pcsr.h"
+//#include "pcsr.h"
 #include "hpecworkergraph.hpp"
 #include "types.h"
 
@@ -22,11 +22,11 @@ public:
 
     static long long aggregate_square_count(std::map<std::pair<VertexID, VertexID>, ui>& wedge_map, long long&  global_cnt);
 
-    static void distributed_dynamic_count_square(PCSR* graph);
+    //static void distributed_dynamic_count_square(PCSR* graph);
 
     static long long opt_communication_cost_analysis(const std::string& vertex_partition_file_path, const std::string& file_path, int partition_no);
     static long long naive_comm_cost_analysis(Graph* graph, const std::string& vertex_partition_file_path, int partition_no);
-    static long long dist_comm_cost_analysis(PCSR* graph, std::vector<Edge> batched_edges, int rank);
+    //static long long dist_comm_cost_analysis(PCSR* graph, std::vector<Edge> batched_edges, int rank);
 };
 
 
