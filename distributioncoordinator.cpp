@@ -252,7 +252,9 @@ bool DistributionCoordinator::sendWedgeCnt(std::map<std::pair<VertexID, VertexID
     
 
     WedgeCnt wedge_cnt;
-    for (const auto& [key, value] : send_wedge_map){
+    for (const auto& kv : send_wedge_map){
+		const auto& key = kv.first;
+        const auto& value = kv.second;
         wedge_cnt.first_vtx = key.first;
         wedge_cnt.third_vtx = key.second;
         wedge_cnt.cnt = value;

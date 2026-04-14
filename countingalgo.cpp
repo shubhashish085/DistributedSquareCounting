@@ -160,8 +160,10 @@ void CountingAlgorithm::distributed_count_square_in_partitioned_graph(const std:
         std::vector<WedgeCnt> buffer(buffer_size);
 
         WedgeCnt wedge_cnt;
-        for (const auto &[key, value] : graph->wedge_map)
+        for (const auto &kv : graph->wedge_map)
         {
+            const auto& key = kv.first;
+            const auto& value = kv.second;
             wedge_cnt.first_vtx = key.first;
             wedge_cnt.third_vtx = key.second;
             wedge_cnt.cnt = value;
@@ -277,8 +279,9 @@ void CountingAlgorithm::count_square_in_partitioned_graph_single_node(const std:
 
         long long local_sq_count = 0;
 
-        for (const auto &[key, value] : graph->wedge_map)
-        {
+        for (const auto &kv : graph->wedge_map)
+        {   
+            const auto& value = kv.second;
             local_sq_count += (value * (value - 1) / 2);
         }
 
@@ -287,8 +290,9 @@ void CountingAlgorithm::count_square_in_partitioned_graph_single_node(const std:
         total_exact_count += local_sq_count;
     }
 
-    for (const auto &[key, value] : wedge_map_comm)
+    for (const auto &kv : wedge_map_comm)
     {
+        const auto& value = kv.second;
         total_exact_count += (value * (value - 1) / 2);
     }
 
@@ -356,8 +360,9 @@ void CountingAlgorithm::dist_opt_count_square_in_partitioned_graph(const std::st
 
         //std::cout << "Rank : " << world_rank << " Communication Wedge Map Count : " << wedge_map.size() << std::endl;
 
-        for (const auto &[key, value] : wedge_map)
+        for (const auto &kv : wedge_map)
         {
+            const auto& value = kv.second;
             total_sq_count += (value * (value - 1) / 2);
         }
 
@@ -444,8 +449,9 @@ void CountingAlgorithm::dist_opt_count_square_in_partitioned_graph(const std::st
 
         long long local_sq_count = 0;
 
-        for (const auto &[key, value] : graph->wedge_map)
+        for (const auto &kv : graph->wedge_map)
         {
+            const auto& value = kv.second;
             local_sq_count += (value * (value - 1) / 2);
         }
 
@@ -454,8 +460,10 @@ void CountingAlgorithm::dist_opt_count_square_in_partitioned_graph(const std::st
         ui buffer_size = (graph->wedge_map_comm).size() * 3;
         std::vector<int> buffer;
 
-        for (const auto &[key, value] : graph->wedge_map_comm)
+        for (const auto &kv : graph->wedge_map_comm)
         {
+            const auto& key = kv.first;
+            const auto& value = kv.second;
             buffer.push_back(key.first);
             buffer.push_back(key.second);
             buffer.push_back(value);
@@ -738,8 +746,10 @@ void CountingAlgorithm::distributed_count_square(Graph *graph)
             }
         }
 
-        for (const auto &[key, value] : graph->wedge_map)
+        for (const auto &kv : graph->wedge_map)
         {
+            const auto& key = kv.first;
+            const auto& value = kv.second;
             buffer.push_back(key.first);
             buffer.push_back(key.second);
             buffer.push_back(value);
@@ -787,8 +797,10 @@ void CountingAlgorithm::distributed_dynamic_count_square(PCSR *graph)
 long long CountingAlgorithm::aggregate_square_count(std::map<std::pair<VertexID, VertexID>, ui> &wedge_map, long long &global_cnt)
 {
 
-    for (const auto &[key, value] : wedge_map)
+    for (const auto &kv : wedge_map)
     {
+        const auto& key = kv.first;
+        const auto& value = kv.second;
         global_cnt += combinations(value, 2);
     }
 

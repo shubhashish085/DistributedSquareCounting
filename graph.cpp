@@ -471,8 +471,10 @@ void Graph::loadPartitionedGraphFromFile(const std::string &vertex_partition_fil
     }
 
     VertexID i = 0;
-    for (const auto &[key, value] : ghost_vertex_map)
+    for (const auto &kv : ghost_vertex_map)
     {
+        const auto& key = kv.first;
+        const auto& value = kv.second;
         ghost_vertex_idx_map[key] = i;
         g_offsets[i + 1] = g_offsets[i] + value;
         i++;
@@ -500,8 +502,7 @@ void Graph::loadPartitionedGraphFromFile(const std::string &vertex_partition_fil
         if((begin == end) || (begin >= total_vertices_count) || (end >= total_vertices_count)){
             continue;
         }
-
-
+        
         if (vertex_idx_map.find(begin) != vertex_idx_map.end()){
             begin_idx = vertex_idx_map[begin];
             offset = offsets[begin_idx] + neighbors_offset[begin_idx];
