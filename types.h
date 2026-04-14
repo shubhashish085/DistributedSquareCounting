@@ -78,7 +78,8 @@ struct WedgeCnt
     VertexID third_vtx;
 	VertexID cnt;
 
-	WedgeCnt():first_vtx(INVALID_VID), third_vtx(INVALID_VID) {}
+	WedgeCnt():first_vtx(INVALID_VID), third_vtx(INVALID_VID), cnt(0) {}
+	WedgeCnt(const WedgeCnt &iWedge): first_vtx(iWedge.first_vtx), third_vtx(iWedge.third_vtx), cnt(iWedge.cnt) {}
 	inline void setValue(VertexID first, VertexID third, VertexID iCnt)
 	{
 		first_vtx = first;

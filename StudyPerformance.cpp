@@ -86,6 +86,8 @@
 
 int main(int argc, char** argv){
 
+    MPI_Init(&argc, &argv);
+
     std::string input_data_graph_file = argv[1];
     std::string vertex_partition_file = argv[2];
     std::cout << "Input Graph File : " << input_data_graph_file << std::endl;
@@ -93,9 +95,23 @@ int main(int argc, char** argv){
 
     CountingAlgorithm::dist_opt_count_square_in_partitioned_graph(input_data_graph_file, vertex_partition_file);   
 
+    MPI_Finalize();
+}
+
+
+/*int main(int argc, char** argv){
+
+    std::string input_data_graph_file = argv[1];
+    std::string vertex_partition_file = argv[2];
+    std::cout << "Input Graph File : " << input_data_graph_file << std::endl;
+    std::cout << "Vertex Partition File : " << vertex_partition_file << std::endl;
+
+    CountingAlgorithm::count_square_in_partitioned_graph_single_node(input_data_graph_file, vertex_partition_file);   
+    //CountingAlgorithm::count_square_in_partitioned_graph_single_node(input_data_graph_file, vertex_partition_file);   
+
     std::cout << "==================================================" << std::endl;
 
-}
+}*/
 
 
 
