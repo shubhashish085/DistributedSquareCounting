@@ -590,6 +590,63 @@ long long CountingAlgorithm::opt_communication_cost_analysis(const std::string &
     return comm_cost;
 }
 
+
+long long CountingAlgorithm::mem_cost_analysis_wedge_map(const std::string &vertex_partition_file_path, const std::string &file_path, int partition_no)
+{
+
+    long long mem_cost = 0;
+
+    VertexID *neighbors;
+    ui nbr_count;
+    std::pair<VertexID, VertexID> search_pair;
+
+    for (ui partition_idx = 0; partition_idx < partition_no; partition_idx++)
+    {   
+        long long ptn_mem_cost = 0;
+        Graph *graph = new Graph();
+        graph->loadPartitionedGraphFromFile(vertex_partition_file_path, file_path, partition_idx);
+
+        for (ui i = 0; i < (graph->vertices).size(); i++)
+        {
+            neighbors = graph->getVertexNeighbors(i, nbr_count);
+
+            for (ui j = 0; j < nbr_count; j++)
+            {
+                for (ui k = j + 1; k < nbr_count; k++)
+                {
+                    search_pair = get_wedge_endpoint_pair(neighbors[j], neighbors[k]);
+                    if (graph->partition[neighbors[j]] != graph->partition[neighbors[k]])
+                    {
+                        auto search_result = (graph->wedge_map_comm).find(search_pair);
+                        if (search_result == (graph->wedge_map_comm).end())
+                        {
+                            graph->wedge_map_comm[search_pair] = 1;
+                        }
+                    } else {
+                        auto search_result = (graph->wedge_map).find(search_pair);
+                        if (search_result == (graph->wedge_map).end())
+                        {
+                            graph->wedge_map[search_pair] = 1;
+                        }
+                    }
+                }
+            }
+        }
+
+        ptn_mem_cost = graph->ghost_vertices_count + ((graph->wedge_map).size() * 3) + ((graph->wedge_map_comm).size() * 3);
+
+        std::cout << "Rank : " << partition_idx << " - Ghost Vertex Count - " << graph->ghost_vertices_count << std::endl;
+        std::cout << "Rank : " << partition_idx << " - Memory Cost - " << ptn_mem_cost << std::endl;  
+
+        mem_cost += ptn_mem_cost;        
+
+    }
+
+    return mem_cost;
+}
+
+
+
 /*long long CountingAlgorithm::dist_comm_cost_analysis(PCSR *graph, std::vector<Edge> batched_edges, int rank)
 {
     long long comm_cost = 0;

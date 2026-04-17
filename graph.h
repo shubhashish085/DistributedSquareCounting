@@ -15,6 +15,7 @@ public:
     std::map<VertexID, VertexID> ghost_vertex_map;
     std::map<VertexID, VertexID> ghost_vertex_idx_map;
     ui ghost_vertices_count;
+    ui ghost_edges_count;
     ui vertices_count;
     ui edges_count;
     ui max_degree;

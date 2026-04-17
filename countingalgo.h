@@ -26,6 +26,7 @@ public:
 
     static long long opt_communication_cost_analysis(const std::string& vertex_partition_file_path, const std::string& file_path, int partition_no);
     static long long naive_comm_cost_analysis(Graph* graph, const std::string& vertex_partition_file_path, int partition_no);
+    static long long mem_cost_analysis_wedge_map(const std::string& vertex_partition_file_path, const std::string& file_path, int partition_no);
     //static long long dist_comm_cost_analysis(PCSR* graph, std::vector<Edge> batched_edges, int rank);
 };
 

@@ -383,7 +383,7 @@ void Graph::loadPartitionedGraphFromFile(const std::string &vertex_partition_fil
     char type;
     ui label = 0, offset;
 
-    ui ghost_edges_count = 0;
+    ghost_edges_count = 0;
 
     while (std::getline(infile, input_line))
     {

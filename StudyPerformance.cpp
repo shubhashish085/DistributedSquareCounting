@@ -36,6 +36,25 @@
 
 }*/
 
+int main(int argc, char** argv){
+
+    std::string input_data_graph_file = argv[1];
+    std::string vertex_partition_file = argv[2];
+    std::string partition_no = argv[3];
+
+    int n_partition = std::stoi(partition_no);
+
+    long long mem_cost = CountingAlgorithm::mem_cost_analysis_wedge_map(vertex_partition_file, input_data_graph_file, n_partition);
+
+    std::cout << "Input Graph File : " << input_data_graph_file << std::endl;
+    std::cout << "Vertex Partition File : " << vertex_partition_file << std::endl;
+    std::cout << "Partition No : " << n_partition << std::endl;
+    std::cout << "Memory Cost : " << mem_cost << std::endl;
+
+    std::cout << "===============================================================================" << std::endl;
+
+}
+
 
 /*int main(int argc, char** argv){
 
@@ -83,7 +102,7 @@
 
 
 
-int main(int argc, char** argv){
+/*int main(int argc, char** argv){
 
     MPI_Init(&argc, &argv);
 
@@ -95,7 +114,7 @@ int main(int argc, char** argv){
     CountingAlgorithm::dist_opt_count_square_in_partitioned_graph(input_data_graph_file, vertex_partition_file);   
 
     MPI_Finalize();
-}
+}*/
 
 
 /*int main(int argc, char** argv){
