@@ -633,13 +633,12 @@ long long CountingAlgorithm::mem_cost_analysis_wedge_map(const std::string &vert
             }
         }
 
-        ptn_mem_cost = graph->ghost_vertices_count + ((graph->wedge_map).size() * 3) + ((graph->wedge_map_comm).size() * 3);
+        ptn_mem_cost = graph->ghost_vertices_count + graph->ghost_edges_count + ((graph->wedge_map).size() * 3) + ((graph->wedge_map_comm).size() * 3);
 
         std::cout << "Rank : " << partition_idx << " - Ghost Vertex Count - " << graph->ghost_vertices_count << std::endl;
         std::cout << "Rank : " << partition_idx << " - Memory Cost - " << ptn_mem_cost << std::endl;  
 
-        mem_cost += ptn_mem_cost;        
-
+        mem_cost += ptn_mem_cost;   
     }
 
     return mem_cost;
